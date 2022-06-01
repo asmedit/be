@@ -11,6 +11,9 @@
 #include "editor.h"
 #include "terminal.h"
 
+int hexstr_idx = 0;
+char hexstr[2 + 1];
+
 void editor_move_cursor(struct editor* e, int dir, int amount) {
 	switch (dir) {
 	case KEY_UP:    e->cursor_y-=amount; break;
@@ -217,6 +220,8 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 
 	char hex[ 32 + 1];  // example: 65
 	int  hexlen = 0;    // assigned by snprintf - we need to know the amount of chars written.
+	char inp[ 32 + 1];  // example: 65
+	int  inplen = 0;    // assigned by snprintf - we need to know the amount of chars written.
 	char banner[ 1024 + 1];  // example: 65
 	int  banlen = 0;    // assigned by snprintf - we need to know the amount of chars written.
 	char asc[256 + 1];  // example: Hello.World!
@@ -264,7 +269,7 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 		}
 		col++;
 
-		hexlen = snprintf(hex, sizeof(hex), "%02x", curr_byte);
+        hexlen = snprintf(hex, sizeof(hex), "%02x", curr_byte);
 
 		if (isprint(curr_byte)) {
 			asc[offset % e->octets_per_line] = curr_byte;
@@ -279,12 +284,19 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 			row_char_count++;
 		}
 
-		if (e->cursor_y == row && e->cursor_x == col)
-		     charbuf_append(b, "\x1b[1;4;43m ", 9);
-		else charbuf_append(b, "\x1b[3;3;44m ", 9);
 
-		charbuf_append(b, hex, hexlen);
-		charbuf_append(b, "\x1b[0m", 4);
+		if (e->cursor_y == row && e->cursor_x == col) {
+		     charbuf_append(b, "\x1b[1;4;43m ", 9);
+             memset(&hexstr[1], '\0', 1);
+             if (hexstr_idx == 1 && e->mode == MODE_REPLACE)
+                 hexlen = snprintf(hex, sizeof(hex), "%02x",
+                     curr_byte & 0xF | hex2bin(hexstr) & 0xF << 4);
+		} else {
+		     charbuf_append(b, "\x1b[3;3;44m ", 9);
+		}
+
+        charbuf_append(b, hex, hexlen);
+	    charbuf_append(b, "\x1b[0m", 4);
 
 		row_char_count += 2;
 
@@ -402,9 +414,8 @@ void editor_scroll_to_offset(struct editor* e, unsigned int offset) {
 	editor_cursor_at_offset(e, offset, &(e->cursor_x), &(e->cursor_y));
 }
 
+
 int editor_read_hex_input(struct editor* e, char* out) {
-	static int  hexstr_idx = 0; // what index in hexstr are we updating?
-	static char hexstr[2 + 1];  // the actual string updated with the keypress.
 
 	int next = read_key();
 
@@ -587,6 +598,8 @@ void editor_process_keypress(struct editor* e) {
 	if (e->mode & (MODE_INSERT | MODE_APPEND)) {
 		char out = 0;
 		if (editor_read_hex_input(e, &out) != -1) {
+		    hexstr[0] = 0; hexstr[1] = 0; hexstr[2] = 0;
+		    hexstr_idx = 0;
 			editor_insert_byte(e, out, e->mode & MODE_APPEND);
 			editor_move_cursor(e, KEY_RIGHT, 1);
 		}
@@ -622,6 +635,8 @@ void editor_process_keypress(struct editor* e) {
 		char out = 0;
 		if (e->content_length > 0) {
 			if (editor_read_hex_input(e, &out) != -1) {
+                hexstr[0] = 0; hexstr[1] = 0; hexstr[2] = 0;
+                hexstr_idx = 0;
 				editor_replace_byte(e, out);
 			}
 			return;

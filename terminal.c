@@ -166,3 +166,20 @@ void clear_screen() {
 	}
 }
 
+int gotoxy(int x, int y)
+{
+    char es  [100];
+    char xstr[100];
+    char ystr[100];
+    sprintf(xstr, "%d", x);
+    sprintf(ystr, "%d", y);
+    es[0]='\0';
+    strcat(es, "\033[");
+    strcat(es, ystr);
+    strcat(es, "d");
+    strcat(es, "\033[");
+    strcat(es, xstr);
+    strcat(es, "G");
+    printf("%s", es);
+    return 0;
+}

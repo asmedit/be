@@ -45,6 +45,7 @@ void disable_raw_mode();
 void clear_screen();
 int  read_key();
 int  hex2bin(const char* s);
+bool gotoxy(int rows, int cols);
 bool get_window_size(int* rows, int* cols);
 bool is_pos_num(const char* s);
 bool is_hex(const char* s);
