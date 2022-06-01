@@ -62,8 +62,7 @@ int editor_offset_at_cursor(struct editor* e);
 void editor_openfile(struct editor* e, const char* filename);
 void editor_process_command(struct editor* e, const char* cmd);
 void editor_process_search(struct editor* e, const char* str, enum search_direction dir);
-int editor_parse_search_string(const char* inputstr, struct charbuf* parsedstr,
-			       const char** err_info);
+int editor_parse_search_string(const char* inputstr, struct charbuf* parsedstr, const char** err_info);
 void editor_process_keypress(struct editor* e);
 int editor_read_hex_input(struct editor* e, char* output);
 int editor_read_string(struct editor* e, char* dst, int len);
@@ -81,4 +80,4 @@ void editor_setmode(struct editor *e, enum editor_mode mode);
 int editor_statusmessage(struct editor* e, enum status_severity s, const char* fmt, ...);
 void editor_writefile(struct editor* e);
 
-#endif // _HX_EDITOR_H
+#endif

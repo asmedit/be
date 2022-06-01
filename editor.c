@@ -18,52 +18,26 @@ void editor_move_cursor(struct editor* e, int dir, int amount) {
 	case KEY_LEFT:  e->cursor_x-=amount; break;
 	case KEY_RIGHT: e->cursor_x+=amount; break;
 	}
-	// Did we hit the start of the file? If so, stop moving and place
-	// the cursor on the top-left of the hex display.
 	if (e->cursor_x <= 1 && e->cursor_y <= 1 && e->line <= 0) {
 		e->cursor_x = 1;
 		e->cursor_y = 1;
 		return;
 	}
 
-	// Move the cursor over the x (columns) axis.
 	if (e->cursor_x < 1) {
-		// Are we trying to move left on the leftmost boundary?
-		//
-		// 000000000: 4d49 5420 4c69 6365 6e73 650a 0a43 6f70  MIT License..Cop
-		// 000000010: 7972 6967 6874 2028 6329 2032 3031 3620  yright (c) 2016
-		//            <--- [cursor goes to the left]
-		//
-		// Then we go up a row, cursor to the right. Like a text editor.
 		if (e->cursor_y >= 1) {
 			e->cursor_y--;
 			e->cursor_x = e->octets_per_line;
 		}
 	} else if (e->cursor_x > e->octets_per_line) {
-		// Moving to the rightmost boundary?
-		//
-		// 000000000: 4d49 5420 4c69 6365 6e73 650a 0a43 6f70  MIT License..Cop
-		// 000000010: 7972 6967 6874 2028 6329 2032 3031 3620  yright (c) 2016
-		//                    [cursor goes to the right] --->
-		//
-		// Then move a line down, position the cursor to the beginning of the row.
-		// Unless it's the end of file.
 		e->cursor_y++;
 		e->cursor_x = 1;
 	}
 
-	// Did we try to move up when there's nothing? For example
-	//
-	//                       [up here]
-	// --------------------------^
-	// 000000000: 4d49 5420 4c69 6365 6e73 650a 0a43 6f70  MIT License..Cop
-	//
-	// Then stop moving upwards, do not scroll, return.
 	if (e->cursor_y <= 1 && e->line <= 0) {
 		e->cursor_y = 1;
 	}
 
-	// Move the cursor over the y axis
 	if (e->cursor_y > e->screen_rows - 2) {
 		e->cursor_y = e->screen_rows - 2;
 		editor_scroll(e, 1);
@@ -72,8 +46,6 @@ void editor_move_cursor(struct editor* e, int dir, int amount) {
 		editor_scroll(e, -1);
 	}
 
-	// Did we hit the end of the file somehow? Set the cursor position
-	// to the maximum cursor position possible.
 	unsigned int offset = editor_offset_at_cursor(e);
 	if (offset >= e->content_length - 1) {
 		editor_cursor_at_offset(e, offset, &e->cursor_x, &e->cursor_y);
@@ -490,7 +462,6 @@ void editor_replace_byte(struct editor* e, char x) {
 }
 
 void editor_process_command(struct editor* e, const char* cmd) {
-	// Command: go to base 10 offset
 	bool b = is_pos_num(cmd);
 	if (b) {
 		int offset = str2int(cmd, 0, e->content_length, e->content_length - 1);
@@ -499,7 +470,6 @@ void editor_process_command(struct editor* e, const char* cmd) {
 		return;
 	}
 
-	// Command: go to hex offset
 	if (cmd[0] == '0' && cmd[1] == 'x') {
 		const char* ptr = &cmd[2];
 		if (!is_hex(ptr)) {
@@ -537,14 +507,10 @@ void editor_process_command(struct editor* e, const char* cmd) {
 		return;
 	}
 
-	// Check if we want to set an option at runtime. The first three bytes are
-	// checked first, then the rest is parsed.
 	if (strncmp(cmd, "set", 3) == 0) {
 		char setcmd[INPUT_BUF_SIZE] = {0};
 		int setval = 0;
 		int items_read = sscanf(cmd, "set %[a-z]=%d", setcmd, &setval);
-		// command name_____________________/    /
-		// command value________________________/
 
 		if (items_read != 2) {
 			editor_statusmessage(e, STATUS_ERROR, "set command format: `set cmd=num`");
@@ -564,7 +530,6 @@ void editor_process_command(struct editor* e, const char* cmd) {
 			return;
 		}
 
-		// Set the grouping of bytes to a different value.
 		if (strcmp(setcmd, "grouping") == 0 || strcmp(setcmd, "g") == 0) {
 			int grouping = clampi(setval, 4, 16);
 			clear_screen();
@@ -584,42 +549,30 @@ void editor_process_command(struct editor* e, const char* cmd) {
 
 
 int editor_read_string(struct editor* e, char* dst, int len) {
-	// if we hit enter, set the mode to normal mode, execute
-	// the command, and possibly set a statusmessage.
 	int c = read_key();
 	if (c == KEY_ENTER || c == KEY_ESC) {
 		editor_setmode(e, MODE_NORMAL);
-		// copy the 'temp' inputbuffer to the dst.
 		strncpy(dst, e->inputbuffer, len);
-		// After copying, reset the index and the inputbuffer
 		e->inputbuffer_index = 0;
 		memset(e->inputbuffer,  '\0', sizeof(e->inputbuffer));
 		return c;
 	}
 
-	// backspace characters by setting characters to 0
 	if (c == KEY_BACKSPACE && e->inputbuffer_index > 0) {
 		e->inputbuffer_index--;
 		e->inputbuffer[e->inputbuffer_index] = '\0';
 		return c;
 	}
 
-	// Safety guard. Our inputbuffer size is limited so stop
-	// incrementing our buffer index after this maximum. We
-	// subtract the size with 1, to allow the last byte to be
-	// a null terminator for the string.
 	if ((size_t) e->inputbuffer_index >= sizeof(e->inputbuffer) - 1) {
 		return c;
 	}
 
-	// if the buffer is empty (no command), and we're
-	// still backspacing, return to normal mode.
 	if (c == KEY_BACKSPACE && e->inputbuffer_index == 0) {
 		editor_setmode(e, MODE_NORMAL);
 		return c;
 	}
 
-	// Only act on printable characters.
 	if (!isprint(c)) {
 		return c;
 	}
@@ -640,7 +593,6 @@ void editor_process_keypress(struct editor* e) {
 		return;
 	}
 
-	// Append or insert 'literal' ASCII values.
 	if (e->mode & (MODE_INSERT_ASCII | MODE_APPEND_ASCII)) {
 		char c = read_key();
 		if (c == KEY_ESC) {
@@ -679,7 +631,6 @@ void editor_process_keypress(struct editor* e) {
 	}
 
 	if (e->mode & MODE_COMMAND) {
-		// Input manual, typed commands.
 		char cmd[INPUT_BUF_SIZE];
 		int c = editor_read_string(e, cmd, INPUT_BUF_SIZE);
 		if (c == KEY_ENTER && strlen(cmd) > 0) {
