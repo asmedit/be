@@ -427,11 +427,11 @@ int editor_read_hex_input(struct editor* e, char* out) {
 	}
 
 	if (!isprint(next)) {
-		editor_statusmessage(e, STATUS_ERROR, "Error: unprintable character (%02x)", next);
+//		editor_statusmessage(e, STATUS_ERROR, "Error: unprintable character (%02x)", next);
 		return -1;
 	}
 	if (!isxdigit(next)) {
-		editor_statusmessage(e, STATUS_ERROR, "Error: '%c' (%02x) is not valid hex", next, next);
+//		editor_statusmessage(e, STATUS_ERROR, "Error: '%c' (%02x) is not valid hex", next, next);
 		return -1;
 	}
 
@@ -639,10 +639,10 @@ void editor_process_keypress(struct editor* e) {
                 hexstr_idx = 0;
 				editor_replace_byte(e, out);
 			}
-			return;
 		} else {
 			editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
 		}
+		return;
 	}
 
 	if (e->mode & MODE_COMMAND) {
@@ -665,7 +665,8 @@ void editor_process_keypress(struct editor* e) {
 	case KEY_CTRL_S: editor_writefile(e); return;
 	}
 
-	if (e->mode & MODE_NORMAL) {
+	if (e->mode & MODE_NORMAL)
+	{
 		switch (c) {
 		case KEY_UP:
 		case KEY_DOWN:
