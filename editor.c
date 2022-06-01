@@ -247,7 +247,7 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
 	unsigned char val = e->contents[offset_at_cursor];
 	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
-	int file_position = snprintf(banner, sizeof(banner), "%28c% 15d%% ", ' ',  percentage);
+	int file_position = snprintf(banner, sizeof(banner), "%28c% 15d%% ", ' ', percentage);
 	charbuf_append(b, banner, file_position);
 	charbuf_append(b, "\r\n", 2);
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);
@@ -660,14 +660,13 @@ void editor_process_keypress(struct editor* e) {
 		case 'j': editor_move_cursor(e, KEY_DOWN,  1); break;
 		case 'k': editor_move_cursor(e, KEY_UP,    1); break;
 		case 'l': editor_move_cursor(e, KEY_RIGHT, 1); break;
-		case 'a': editor_setmode(e, MODE_APPEND);       return;
-		case 'A': editor_setmode(e, MODE_APPEND_ASCII); return;
-		case 'i': editor_setmode(e, MODE_INSERT);       return;
-		case 'I': editor_setmode(e, MODE_INSERT_ASCII); return;
+//		case 'a': editor_setmode(e, MODE_APPEND);       return;
+//		case 'A': editor_setmode(e, MODE_APPEND_ASCII); return;
+//		case 'i': editor_setmode(e, MODE_INSERT);       return;
+//		case 'I': editor_setmode(e, MODE_INSERT_ASCII); return;
 		case 'r': editor_setmode(e, MODE_REPLACE);      return;
 		case 'R': editor_setmode(e, MODE_REPLACE_ASCII);return;
 		case ':': editor_setmode(e, MODE_COMMAND);      return;
-		case '/': editor_setmode(e, MODE_SEARCH);       return;
 		case KEY_HOME: e->cursor_x = 1; return;
 		case KEY_END:  editor_move_cursor(e, KEY_RIGHT, e->octets_per_line - e->cursor_x); return;
 		case KEY_CTRL_U:

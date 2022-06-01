@@ -51,5 +51,6 @@ bool is_hex(const char* s);
 int hex2int(const char* s);
 int clampi(int i, int min, int max);
 int str2int(const char* s, int min, int max, int def);
+char seq[4];
 
 #endif

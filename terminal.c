@@ -65,7 +65,6 @@ int read_key() {
 	ssize_t nread;
 	while ((nread = read(STDIN_FILENO, &c, 1)) == 0);
 	if (nread == -1) return -1;
-	char seq[4]; // escape sequence buffer.
 	switch (c) {
 	case KEY_BACKSPACE:
 	case KEY_CTRL_H: return KEY_BACKSPACE;
@@ -73,11 +72,6 @@ int read_key() {
 
 		if (read(STDIN_FILENO, seq, 1) == 0) return KEY_ESC;
 		if (read(STDIN_FILENO, seq + 1, 1) == 0) return KEY_ESC;
-
-		// home = 0x1b, [ = 0x5b, 1 = 0x31, ~ = 0x7e,
-		// end  = 0x1b, [ = 0x5b, 4 = 0x34, ~ = 0x7e,
-		// pageup   1b, [=5b, 5=35, ~=7e,
-		// pagedown 1b, [=5b, 6=36, ~=7e,
 
 		if (seq[0] == '[') {
 			if (seq[1] >= '0' && seq[1] <= '9') {
@@ -87,13 +81,10 @@ int read_key() {
 				if (seq[2] == '~') {
 					switch (seq[1]) {
 					case '1': return KEY_HOME;
-					case '3': return KEY_DEL;
-					case '4': return KEY_END;
+					case '3': return KEY_END;
+					case '4': return KEY_DEL;
 					case '5': return KEY_PAGEUP;
 					case '6': return KEY_PAGEDOWN;
-					// TODO: with rxvt-unicode, ^[[7~ and ^[[8~ seem to be
-					// emitted when the home/end key are pressed. We can
-					// currently mitigate it like this.
 					case '7': return KEY_HOME;
 					case '8': return KEY_END;
 					}
@@ -104,12 +95,10 @@ int read_key() {
 			case 'B': return KEY_DOWN;
 			case 'C': return KEY_RIGHT;
 			case 'D': return KEY_LEFT;
-			case 'H': return KEY_HOME; // does not work with me?
-			case 'F': return KEY_END;  // ... same?
+			case 'H': return KEY_HOME;
+			case 'F': return KEY_END;
 			}
 		} else if (seq[0] == 'O') {
-			// Some terminal emulators emit ^[[O sequences for HOME/END,
-			// such as xfce4-terminal.
 			switch (seq[1]) {
 			case 'H': return KEY_HOME;
 			case 'F': return KEY_END;
