@@ -188,7 +188,7 @@ inline int editor_offset_at_cursor(struct editor* e) {
 
 void editor_scroll(struct editor* e, int units) {
 	e->line += units;
-	int upper_limit = e->content_length / e->octets_per_line - (e->screen_rows - 2);
+	int upper_limit = e->content_length / e->octets_per_line - (e->screen_rows - 3);
 	if (e->line >= upper_limit) e->line = upper_limit;
 	if (e->line <= 0) e->line = 0;
 }
@@ -255,7 +255,7 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 		start_offset = e->content_length - e->octets_per_line;
 	}
 
-	int bytes_per_screen = e->screen_rows * e->octets_per_line - 16;
+	int bytes_per_screen = (e->screen_rows - 1) * e->octets_per_line;
 	unsigned int end_offset = bytes_per_screen + start_offset - e->octets_per_line;
 	if (end_offset > e->content_length) {
 		end_offset = e->content_length;
@@ -274,7 +274,7 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 
 	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
 	unsigned char val = e->contents[offset_at_cursor];
-	int percentage = (float)(offset_at_cursor + 1) / (float)e->content_length * 100;
+	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
 	int file_position = snprintf(banner, sizeof(banner), "%28c% 15d%% ", ' ',  percentage);
 	charbuf_append(b, banner, file_position);
 	charbuf_append(b, "\r\n", 2);
