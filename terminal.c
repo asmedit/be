@@ -19,54 +19,35 @@ int hex2bin(const char* s) {
 	for(int i = 0; i < 2; i++) {
 		char c = *s++;
 		int n=0;
-		if( '0' <= c && c <= '9')  {
-			n = c-'0';
-		} else if ('a' <= c && c <= 'f') {
-			n = 10 + c - 'a';
-		} else if ('A' <= c && c <= 'F') {
-			n = 10 + c - 'A';
-		}
+		if( '0' <= c && c <= '9') n = c-'0';
+		else if ('a' <= c && c <= 'f') n = 10 + c - 'a';
+		else if ('A' <= c && c <= 'F') n = 10 + c - 'A';
 		ret = n + ret*16;
 	}
 	return ret;
 }
 
 bool is_pos_num(const char* s) {
-	for (const char* ptr = s; *ptr; ptr++) {
-		if (!isdigit(*ptr)) {
-			return false;
-		}
-	}
+	for (const char* ptr = s; *ptr; ptr++) if (!isdigit(*ptr)) return false;
 	return true;
 }
 
 bool is_hex(const char* s) {
 	const char* ptr = s;
-	while(*++ptr) {
-		if (!isxdigit(*ptr)) {
-			return false;
-		}
-	}
+	while(*++ptr) if (!isxdigit(*ptr)) return false;
 	return true;
 }
 
 int hex2int(const char* s) {
 	char* endptr;
 	intmax_t x = strtoimax(s, &endptr, 16);
-	if (errno == ERANGE) {
-		return 0;
-	}
-
+	if (errno == ERANGE) return 0;
 	return x;
 }
 
 inline int clampi(int i, int min, int max) {
-	if (i < min) {
-		return min;
-	}
-	if (i > max) {
-		return max;
-	}
+	if (i < min) return min;
+	if (i > max) return max;
 	return i;
 }
 
@@ -74,12 +55,8 @@ int str2int(const char* s, int min, int max, int def) {
 	char* endptr;
 	errno = 0;
 	intmax_t x = strtoimax(s, &endptr, 10);
-	if (errno  == ERANGE) {
-		return def;
-	}
-	if (x < min || x > max) {
-		return def;
-	}
+	if (errno  == ERANGE) return def;
+	if (x < min || x > max) return def;
 	return x;
 }
 
@@ -94,12 +71,8 @@ int read_key() {
 	case KEY_CTRL_H: return KEY_BACKSPACE;
 	case KEY_ESC:
 
-		if (read(STDIN_FILENO, seq, 1) == 0) {
-			return KEY_ESC;
-		}
-		if (read(STDIN_FILENO, seq + 1, 1) == 0) {
-			return KEY_ESC;
-		}
+		if (read(STDIN_FILENO, seq, 1) == 0) return KEY_ESC;
+		if (read(STDIN_FILENO, seq + 1, 1) == 0) return KEY_ESC;
 
 		// home = 0x1b, [ = 0x5b, 1 = 0x31, ~ = 0x7e,
 		// end  = 0x1b, [ = 0x5b, 4 = 0x34, ~ = 0x7e,

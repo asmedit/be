@@ -64,8 +64,8 @@ void editor_move_cursor(struct editor* e, int dir, int amount) {
 	}
 
 	// Move the cursor over the y axis
-	if (e->cursor_y > e->screen_rows - 1) {
-		e->cursor_y = e->screen_rows - 1;
+	if (e->cursor_y > e->screen_rows - 2) {
+		e->cursor_y = e->screen_rows - 2;
 		editor_scroll(e, 1);
 	} else if (e->cursor_y < 1 && e->line > 0) {
 		e->cursor_y = 1;
@@ -224,18 +224,19 @@ void editor_render_ascii(struct editor* e, int rownum, unsigned int start_offset
 		if (offset >= e->content_length) return;
 		cc++;
 		char c =  e->contents[offset];
-		if (rownum == e->cursor_y && cc == e->cursor_x) charbuf_append(b, "\x1b[7m", 4);
-		else charbuf_appendf(b, "\x1b[0m", 4);
+		if (rownum == e->cursor_y && cc == e->cursor_x) charbuf_append(b, "\x1b[1;3;43m", 10);
+		else charbuf_appendf(b, "\x1b[1;3;44m", 9);
 		if (isprint(c)) {
-			charbuf_appendf(b, "\x1b[33m%c", c);
+			charbuf_appendf(b, "%c", c);
 		} else {
-			charbuf_append(b, "\x1b[36m.", 6);
+			charbuf_append(b, ".", 6);
 		}
 	}
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);
 }
 
 void editor_render_contents(struct editor* e, struct charbuf* b) {
+
 	if (e->content_length <= 0) {
 		charbuf_append(b, "\x1b[2J", 4);
 		charbuf_appendf(b, "File is empty. Use 'i' to insert a hexadecimal value.");
@@ -244,6 +245,8 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 
 	char hex[ 32 + 1];  // example: 65
 	int  hexlen = 0;    // assigned by snprintf - we need to know the amount of chars written.
+	char banner[ 1024 + 1];  // example: 65
+	int  banlen = 0;    // assigned by snprintf - we need to know the amount of chars written.
 	char asc[256 + 1];  // example: Hello.World!
 	int row_char_count = 0;
 
@@ -252,7 +255,7 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 		start_offset = e->content_length - e->octets_per_line;
 	}
 
-	int bytes_per_screen = e->screen_rows * e->octets_per_line;
+	int bytes_per_screen = e->screen_rows * e->octets_per_line - 16;
 	unsigned int end_offset = bytes_per_screen + start_offset - e->octets_per_line;
 	if (end_offset > e->content_length) {
 		end_offset = e->content_length;
@@ -264,11 +267,24 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 	int col = 0; // Col counter, from 0 to number of octets per line. Used to render
 	             // a colored cursor per byte.
 
+    int current_offset =  editor_offset_at_cursor(e);
+	unsigned char active_byte = e->contents[current_offset];
+	banlen = snprintf(banner, sizeof(banner), "\x1b[1;1;42m XT 8086 [HEX][%02x][%08x] ", active_byte, current_offset);
+	charbuf_append(b, banner, banlen);
+
+	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
+	unsigned char val = e->contents[offset_at_cursor];
+	int percentage = (float)(offset_at_cursor + 1) / (float)e->content_length * 100;
+	int file_position = snprintf(banner, sizeof(banner), "%28c% 15d%% ", ' ',  percentage);
+	charbuf_append(b, banner, file_position);
+	charbuf_append(b, "\r\n", 2);
+	charbuf_append(b, "\x1b[0m\x1b[K", 7);
+
 	for (offset = start_offset; offset < end_offset; offset++) {
 		unsigned char curr_byte = e->contents[offset];
 
 		if (offset % e->octets_per_line == 0) {
-			charbuf_appendf(b, "\x1b[1;35m%09x\x1b[0m:", offset);
+			charbuf_appendf(b, "\x1b[12;3;45m%09x\x1b[0m", offset);
 			memset(asc, '\0', sizeof(asc));
 			row_char_count = 0;
 			col = 0;
@@ -276,7 +292,7 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 		}
 		col++;
 
-		hexlen = snprintf(hex, sizeof(hex), "\x1b[1;34m%02x", curr_byte);
+		hexlen = snprintf(hex, sizeof(hex), "%02x", curr_byte);
 
 		if (isprint(curr_byte)) {
 			asc[offset % e->octets_per_line] = curr_byte;
@@ -285,22 +301,23 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 		}
 
 		if (offset % e->grouping == 0) {
-			charbuf_append(b, " ", 1);
+		    if (row_char_count % (e->octets_per_line / 4) != 0)
+		         charbuf_append(b, "\x1b[12;3;44m ", 11);
+		    else charbuf_append(b, "\x1b[12;3;47m ", 11);
 			row_char_count++;
 		}
 
-		if (e->cursor_y == row) {
-			if (e->cursor_x == col) {
-				charbuf_append(b, "\x1b[7m", 4);
-			}
-		}
+		if (e->cursor_y == row && e->cursor_x == col)
+		     charbuf_append(b, "\x1b[1;4;43m ", 9);
+		else charbuf_append(b, "\x1b[3;3;44m ", 9);
+
 		charbuf_append(b, hex, hexlen);
 		charbuf_append(b, "\x1b[0m", 4);
 
 		row_char_count += 2;
 
 		if ((offset+1) % e->octets_per_line == 0) {
-			charbuf_append(b, "  ", 2);
+			charbuf_append(b, "\x1b[1;6;47m ", 10);
 			int the_offset = offset + 1 - e->octets_per_line;
 			editor_render_ascii(e, row, the_offset, b);
 			charbuf_append(b, "\r\n", 2);
@@ -340,24 +357,6 @@ void editor_render_help(struct editor* e) {
 	clear_screen();
 }
 
-
-
-void editor_render_ruler(struct editor* e, struct charbuf* b) {
-	if (e->content_length <= 0) return;
-	char rulermsg[80]; // buffer for the actual message.
-	char buf[20];      // buffer for the cursor positioning
-	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
-	unsigned char val = e->contents[offset_at_cursor];
-	int percentage = (float)(offset_at_cursor + 1) / (float)e->content_length * 100;
-	int rmbw = snprintf(rulermsg, sizeof(rulermsg),
-			"0x%09x,%d (%02x)  %d%%",
-			offset_at_cursor, offset_at_cursor, val, percentage);
-	int cpbw = snprintf(buf, sizeof(buf), "\x1b[0m\x1b[%d;%dH", e->screen_rows, e->screen_cols - rmbw);
-	charbuf_append(b, buf, cpbw);
-	charbuf_append(b, rulermsg, rmbw);
-}
-
-
 void editor_render_status(struct editor* e, struct charbuf* b) {
 	charbuf_appendf(b, "\x1b[%d;0H", e->screen_rows);
 	switch (e->status_severity) {
@@ -392,27 +391,11 @@ void editor_refresh_screen(struct editor* e) {
 		editor_render_contents(e, b);
 		editor_render_status(e, b);
 
-		// Ruler: move to the right of the screen etc.
-		editor_render_ruler(e, b);
 	} else if (e->mode & MODE_COMMAND) {
-		// When in command mode, handle rendering different. For instance,
-		// the cursor is placed at the bottom. Ruler is not required.
-		// After moving the cursor, clear the entire line ([2K).
-		charbuf_appendf(b,
-			"\x1b[0m"    // reset attributes
-			"\x1b[?25h"  // display cursor
-			"\x1b[%d;1H" // move cursor down
-			"\x1b[2K:",  // clear line, write a colon.
-			e->screen_rows);
+
+		charbuf_appendf(b, "\x1b[0m\x1b[?25h\x1b[%d;1H\x1b[2K:", e->screen_rows);
 		charbuf_append(b, e->inputbuffer, e->inputbuffer_index);
-	} else if (e->mode & MODE_SEARCH) {
-		charbuf_appendf(b,
-			"\x1b[0m"    // reset attributes
-			"\x1b[?25h"  // display cursor
-			"\x1b[%d;1H" // mvoe cursor down
-			"\x1b[2K/",  // clear line, write a slash.
-			e->screen_rows);
-		charbuf_append(b, e->inputbuffer, e->inputbuffer_index);
+
 	}
 
 	charbuf_draw(b);
@@ -425,28 +408,16 @@ void editor_scroll_to_offset(struct editor* e, unsigned int offset) {
 		return;
 	}
 
-	// Check if the offset is within range of the current display.
-	// Calculate the minimum offset visible, and the maximum. If
-	// the requested offset is within that range, do not update
-	// the e->line yet (i.e. do not scroll).
 	unsigned int offset_min = e->line * e->octets_per_line;
 	unsigned int offset_max = offset_min + (e->screen_rows * e->octets_per_line);
 
 	if (offset >= offset_min && offset <= offset_max) {
-		// We're within range! Update the cursor position, but
-		// do not scroll, and just return.
 		editor_cursor_at_offset(e, offset, &(e->cursor_x), &(e->cursor_y));
 		return;
 	}
 
-	// Determine what 'line' to set, by dividing the offset to
-	// be displayed by the number of octets per line. The line
-	// is subtracted with the number of rows in the screen, divided
-	// by 2 so the cursor can be centered on the screen.
 	e->line = offset / e->octets_per_line - (e->screen_rows / 2);
 
-	// TODO: editor_scroll uses this same limit. Probably better to refactor
-	// this part on way or another to prevent dupe.
 	int upper_limit = e->content_length / e->octets_per_line - (e->screen_rows - 2);
 	if (e->line >= upper_limit) {
 		e->line = upper_limit;

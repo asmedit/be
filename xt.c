@@ -1,3 +1,5 @@
+// XT disassembler 2022 Groupoid Infinity
+
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
@@ -24,7 +26,7 @@ static void print_help(const char* explanation) {
 	"Command options:\n"
 	"    -h     Print usage info and exits\n"
 	"    -v     Get version information\n"
-	"    -m     Mode ASM/HEX/TEXT\n"
+	"    -m     Mode asm/hex/text\n"
 	"\n"
 	"Report bugs to <maxim@synrc.com>\n"
 	, explanation);
