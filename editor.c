@@ -210,6 +210,23 @@ void editor_render_ascii(struct editor* e, int rownum, unsigned int start_offset
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);
 }
 
+void editor_render_header(struct editor* e, struct charbuf* b) {
+	char banner[ 1024 + 1];
+	int  banlen = 0;
+    int current_offset =  editor_offset_at_cursor(e);
+	unsigned char active_byte = e->contents[current_offset];
+	banlen = snprintf(banner, sizeof(banner), "\x1b[1;1;42m XT 8086 [HEX][%02x][%08x] ", active_byte, current_offset);
+	charbuf_append(b, banner, banlen);
+
+	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
+	unsigned char val = e->contents[offset_at_cursor];
+	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
+	int file_position = snprintf(banner, sizeof(banner), "%28c% 15d%% ", ' ', percentage);
+	charbuf_append(b, banner, file_position);
+	charbuf_append(b, "\r\n", 2);
+	charbuf_append(b, "\x1b[0m\x1b[K", 7);
+}
+
 void editor_render_contents(struct editor* e, struct charbuf* b) {
 
 	if (e->content_length <= 0) {
@@ -218,13 +235,9 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 		return;
 	}
 
-	char hex[ 32 + 1];  // example: 65
-	int  hexlen = 0;    // assigned by snprintf - we need to know the amount of chars written.
-	char inp[ 32 + 1];  // example: 65
-	int  inplen = 0;    // assigned by snprintf - we need to know the amount of chars written.
-	char banner[ 1024 + 1];  // example: 65
-	int  banlen = 0;    // assigned by snprintf - we need to know the amount of chars written.
-	char asc[256 + 1];  // example: Hello.World!
+	char hex[ 32 + 1];
+	int  hexlen = 0;
+	char asc[256 + 1];
 	int row_char_count = 0;
 
 	unsigned int start_offset = e->line * e->octets_per_line;
@@ -239,23 +252,9 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 	}
 
 	unsigned int offset;
-
-	int row = 0; // Row counter, from 0 to term height
-	int col = 0; // Col counter, from 0 to number of octets per line. Used to render
-	             // a colored cursor per byte.
-
+	int row = 0;
+	int col = 0;
     int current_offset =  editor_offset_at_cursor(e);
-	unsigned char active_byte = e->contents[current_offset];
-	banlen = snprintf(banner, sizeof(banner), "\x1b[1;1;42m XT 8086 [HEX][%02x][%08x] ", active_byte, current_offset);
-	charbuf_append(b, banner, banlen);
-
-	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
-	unsigned char val = e->contents[offset_at_cursor];
-	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
-	int file_position = snprintf(banner, sizeof(banner), "%28c% 15d%% ", ' ', percentage);
-	charbuf_append(b, banner, file_position);
-	charbuf_append(b, "\r\n", 2);
-	charbuf_append(b, "\x1b[0m\x1b[K", 7);
 
 	for (offset = start_offset; offset < end_offset; offset++) {
 		unsigned char curr_byte = e->contents[offset];
@@ -372,6 +371,7 @@ void editor_refresh_screen(struct editor* e) {
 			 MODE_INSERT |
 			 MODE_INSERT_ASCII)) {
 
+		editor_render_header(e, b);
 		editor_render_contents(e, b);
 		editor_render_status(e, b);
 

@@ -166,7 +166,7 @@ void clear_screen() {
 	}
 }
 
-int gotoxy(int x, int y)
+void gotoxy(int x, int y)
 {
     char es  [100];
     char xstr[100];
@@ -181,5 +181,5 @@ int gotoxy(int x, int y)
     strcat(es, xstr);
     strcat(es, "G");
     printf("%s", es);
-    return 0;
+    return;
 }
