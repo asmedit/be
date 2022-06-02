@@ -1,5 +1,5 @@
-XT 8086 Disassembler
-====================
+Binary Editor
+=============
 
 This is basically `hx` binary hex editor with disassembly mode.
 The `nasm` is used as disassembly library with support of 16, 32, 64
