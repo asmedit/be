@@ -1,4 +1,3 @@
-CFLAGS = -Wformat
 objects := editor.o buffer.o terminal.o \
 	x86/insnsd.o x86/insnsa.o x86/insnsb.o x86/insnsn.o x86/disasm.o \
 	x86/regdis.o x86/regs.o x86/common.o x86/alloc.o x86/warnings.o \
