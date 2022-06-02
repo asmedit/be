@@ -59,13 +59,14 @@ char hexstr_get(int pos);
 
 struct editor* editor_init();
 void editor_free(struct editor* e);
-void editor_move_cursor(struct editor* e, int dir, int amount);
 void editor_openfile(struct editor* e, const char* filename);
-void editor_process_keypress(struct editor* e);
 void editor_refresh_screen(struct editor* e);
-void editor_scroll(struct editor* e, int units);
 void editor_setmode(struct editor *e, enum editor_mode mode);
 int editor_statusmessage(struct editor* e, enum status_severity s, const char* fmt, ...);
 void editor_writefile(struct editor* e);
+
+void editor_move_cursor(struct editor* e, int dir, int amount);
+void editor_process_keypress(struct editor* e);
+void editor_scroll(struct editor* e, int units);
 
 #endif
