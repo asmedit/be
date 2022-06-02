@@ -1,7 +1,7 @@
-#include <stdlib.h> // size_t
+#ifndef HX_BUFFER_H
+#define HX_BUFFER_H
 
-#ifndef HX_CHARBUF_H
-#define HX_CHARBUF_H
+#include <stdlib.h> // size_t
 
 static const unsigned int CHARBUF_APPENDF_SIZE = 1024;
 struct charbuf { char* contents; int len; int cap; };
