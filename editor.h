@@ -14,6 +14,7 @@ enum editor_mode {
 	MODE_REPLACE       = 1 << 6, // replace values at cursor position.
 	MODE_COMMAND       = 1 << 7, // command input mode.
 	MODE_SEARCH        = 1 << 8, // search mode.
+	MODE_DASM          = 1 << 9, // disassembler mode
 };
 
 enum search_direction {
@@ -47,7 +48,6 @@ struct editor {
 	char inputbuffer[INPUT_BUF_SIZE]; // input buffer for commands
 	int inputbuffer_index; // the index of the current typed key shiz.
 	char searchstr[INPUT_BUF_SIZE]; // the current search string or NULL if none.
-	struct action_list* undo_list; // tail of the list
 };
 
 struct editor* editor_init();

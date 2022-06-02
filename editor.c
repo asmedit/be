@@ -181,6 +181,7 @@ void editor_setmode(struct editor* e, enum editor_mode mode) {
 	case MODE_REPLACE:       editor_statusmessage(e, STATUS_INFO, "-- REPLACE --"); break;
 	case MODE_COMMAND: break;
 	case MODE_SEARCH:  break;
+	case MODE_DASM:          editor_statusmessage(e, STATUS_INFO, "-- DASM --"); break;
 	}
 }
 
@@ -227,7 +228,11 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);
 }
 
-void editor_render_contents(struct editor* e, struct charbuf* b) {
+
+void editor_render_dasm(struct editor* e, struct charbuf* b) {
+}
+
+void editor_render_hex(struct editor* e, struct charbuf* b) {
 
 	if (e->content_length <= 0) {
 		charbuf_append(b, "\x1b[2J", 4);
@@ -311,6 +316,13 @@ void editor_render_contents(struct editor* e, struct charbuf* b) {
 
 }
 
+void editor_render_contents(struct editor* e, struct charbuf* b) {
+    switch (e->mode) {
+        case MODE_DASM: editor_render_dasm(e, b); break;
+        default:        editor_render_hex(e, b);
+    }
+}
+
 void editor_render_help(struct editor* e) {
 	(void) e;
 	struct charbuf* b = charbuf_create();
@@ -369,6 +381,7 @@ void editor_refresh_screen(struct editor* e) {
 			 MODE_APPEND_ASCII |
 			 MODE_REPLACE_ASCII |
 			 MODE_INSERT |
+			 MODE_DASM |
 			 MODE_INSERT_ASCII)) {
 
 		editor_render_header(e, b);
@@ -672,10 +685,7 @@ void editor_process_keypress(struct editor* e) {
 		case KEY_DOWN:
 		case KEY_RIGHT:
 		case KEY_LEFT: editor_move_cursor(e, c, 1); break;
-		case 'h': editor_move_cursor(e, KEY_LEFT,  1); break;
-		case 'j': editor_move_cursor(e, KEY_DOWN,  1); break;
-		case 'k': editor_move_cursor(e, KEY_UP,    1); break;
-		case 'l': editor_move_cursor(e, KEY_RIGHT, 1); break;
+		case 'd': editor_setmode(e, MODE_DASM);         return;
 //		case 'a': editor_setmode(e, MODE_APPEND);       return;
 //		case 'A': editor_setmode(e, MODE_APPEND_ASCII); return;
 //		case 'i': editor_setmode(e, MODE_INSERT);       return;
