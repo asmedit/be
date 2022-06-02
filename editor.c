@@ -136,7 +136,7 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
 	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
 	unsigned char val = e->contents[offset_at_cursor];
 	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
-	int file_position = snprintf(banner, sizeof(banner), "%11c% 15d%% ", ' ', percentage);
+	int file_position = snprintf(banner, sizeof(banner), "%19c% 15d%% ", ' ', percentage);
 	charbuf_append(b, banner, file_position);
 	charbuf_append(b, "\r\n", 2);
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);

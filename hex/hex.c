@@ -19,6 +19,7 @@ void editor_move_cursor_hex(struct editor* e, int dir, int amount) {
 	case KEY_LEFT:  e->cursor_x-=amount; break;
 	case KEY_RIGHT: e->cursor_x+=amount; break;
 	}
+
 	if (e->cursor_x <= 1 && e->cursor_y <= 1 && e->line <= 0) {
 		e->cursor_x = 1;
 		e->cursor_y = 1;
@@ -112,7 +113,7 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 		unsigned char curr_byte = e->contents[offset];
 
 		if (offset % e->octets_per_line == 0) {
-			charbuf_appendf(b, "\x1b[12;3;45m%09x\x1b[0m", offset);
+			charbuf_appendf(b, "\x1b[12;3;45m%017x\x1b[0m", offset);
 			memset(asc, '\0', sizeof(asc));
 			row_char_count = 0;
 			col = 0;

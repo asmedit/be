@@ -1,4 +1,4 @@
-// XT 8086 HEX DASM VIEWER 2022 Groupoid Infinity
+// BE HEX DASM BINARY EDITOR 2022 Groupoid Infinity
 
 #include <stdio.h>
 #include <string.h>
