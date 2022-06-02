@@ -113,7 +113,7 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 		unsigned char curr_byte = e->contents[offset];
 
 		if (offset % e->octets_per_line == 0) {
-			charbuf_appendf(b, "\x1b[12;3;45m%017x\x1b[0m", offset);
+			charbuf_appendf(b, "\x1b[12;3;45m%016x\x1b[0m", offset);
 			memset(asc, '\0', sizeof(asc));
 			row_char_count = 0;
 			col = 0;
@@ -130,9 +130,9 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 		}
 
 		if (offset % e->grouping == 0) {
-		    if (row_char_count % (e->octets_per_line / 4) != 0)
-		         charbuf_append(b, "\x1b[12;3;44m ", 11);
-		    else charbuf_append(b, "\x1b[12;3;47m ", 11);
+		    if ((row_char_count % (e->octets_per_line / 4) != 0) || (offset % 16 == 0))
+		         charbuf_append(b, "\x1b[3;3;44m ", 11);
+		    else charbuf_append(b, "\x1b[3;3;44m-", 11);
 			row_char_count++;
 		}
 
@@ -153,7 +153,7 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 		row_char_count += 2;
 
 		if ((offset+1) % e->octets_per_line == 0) {
-			charbuf_append(b, "\x1b[1;6;47m ", 10);
+			charbuf_append(b, "\x1b[1;6;44m ", 10);
 			int the_offset = offset + 1 - e->octets_per_line;
 			editor_render_ascii(e, row, the_offset, b);
 			charbuf_append(b, "\r\n", 2);

@@ -74,6 +74,7 @@ void editor_openfile(struct editor* e, const char* filename) {
 		editor_statusmessage(e, STATUS_WARNING, "\"%s\" (%d bytes) [readonly]", e->filename, e->content_length);
 	} else {
 		editor_statusmessage(e, STATUS_INFO, "\"%s\" (%d bytes)", e->filename, e->content_length);
+		editor_statusmessage(e, STATUS_INFO, "Tip: use vi commands.");
 	}
 
 	fclose(fp);
@@ -128,15 +129,16 @@ int editor_statusmessage(struct editor* e, enum status_severity sev, const char*
 void editor_render_header(struct editor* e, struct charbuf* b) {
 	char banner[ 1024 + 1];
 	int  banlen = 0;
+	char model[] = "";
     int current_offset =  editor_offset_at_cursor(e);
 	unsigned char active_byte = e->contents[current_offset];
-	banlen = snprintf(banner, sizeof(banner), "\x1b[1;1;42m Binary Editor [EM64T][16][HEX][%02x][%08x] ", active_byte, current_offset);
+	banlen = snprintf(banner, sizeof(banner), "\x1b[1;1;42m Binary Editor [% 6s][64][HEX][%02x][%016x] Size:[%012i] ", "x86-64", active_byte, current_offset, e->content_length);
 	charbuf_append(b, banner, banlen);
 
 	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
 	unsigned char val = e->contents[offset_at_cursor];
 	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
-	int file_position = snprintf(banner, sizeof(banner), "%19c% 15d%% ", ' ', percentage);
+	int file_position = snprintf(banner, sizeof(banner), "% 4d%% ", percentage);
 	charbuf_append(b, banner, file_position);
 	charbuf_append(b, "\r\n", 2);
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);
@@ -194,36 +196,6 @@ void editor_render_status(struct editor* e, struct charbuf* b) {
 }
 
 
-void editor_refresh_screen(struct editor* e) {
-	struct charbuf* b = charbuf_create();
-
-	charbuf_append(b, "\x1b[?25l", 6);
-	charbuf_append(b, "\x1b[H", 3); // move the cursor top left
-
-	if (e->mode &
-			(MODE_REPLACE |
-			 MODE_NORMAL |
-			 MODE_APPEND |
-			 MODE_APPEND_ASCII |
-			 MODE_REPLACE_ASCII |
-			 MODE_INSERT |
-			 MODE_DASM |
-			 MODE_INSERT_ASCII)) {
-
-		editor_render_header(e, b);
-		editor_render_contents(e, b);
-		editor_render_status(e, b);
-
-	} else if (e->mode & MODE_COMMAND) {
-
-		charbuf_appendf(b, "\x1b[0m\x1b[?25h\x1b[%d;1H\x1b[2K:", e->screen_rows);
-		charbuf_append(b, e->inputbuffer, e->inputbuffer_index);
-
-	}
-
-	charbuf_draw(b);
-	charbuf_free(b);
-}
 
 void editor_process_command(struct editor* e, const char* cmd) {
 	bool b = is_pos_num(cmd);
@@ -533,3 +505,33 @@ void editor_process_keypress(struct editor* e) {
 	}
 }
 
+void editor_refresh_screen(struct editor* e) {
+	struct charbuf* b = charbuf_create();
+
+	charbuf_append(b, "\x1b[?25l", 6);
+	charbuf_append(b, "\x1b[H", 3); // move the cursor top left
+
+	if (e->mode &
+			(MODE_REPLACE |
+			 MODE_NORMAL |
+			 MODE_APPEND |
+			 MODE_APPEND_ASCII |
+			 MODE_REPLACE_ASCII |
+			 MODE_INSERT |
+			 MODE_DASM |
+			 MODE_INSERT_ASCII)) {
+
+		editor_render_header(e, b);
+		editor_render_contents(e, b);
+		editor_render_status(e, b);
+
+	} else if (e->mode & MODE_COMMAND) {
+
+		charbuf_appendf(b, "\x1b[0m\x1b[?25h\x1b[%d;1H\x1b[2K:", e->screen_rows);
+		charbuf_append(b, e->inputbuffer, e->inputbuffer_index);
+
+	}
+
+	charbuf_draw(b);
+	charbuf_free(b);
+}
