@@ -5,16 +5,14 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "hex.h"
+
 #include "../buffer.h"
 #include "../editor.h"
 #include "../terminal.h"
 
-#include "hex.h"
 
-int  hexstr_idx = 0;
-char hexstr[2 + 1];
-
-void editor_move_cursor(struct editor* e, int dir, int amount) {
+void editor_move_cursor_hex(struct editor* e, int dir, int amount) {
 	switch (dir) {
 	case KEY_UP:    e->cursor_y-=amount; break;
 	case KEY_DOWN:  e->cursor_y+=amount; break;
@@ -73,7 +71,7 @@ int editor_offset_at_cursor(struct editor* e) {
 }
 
 
-void editor_scroll(struct editor* e, int units) {
+void editor_scroll_hex(struct editor* e, int units) {
 	e->line += units;
 	int upper_limit = e->content_length / e->octets_per_line - (e->screen_rows - 3);
 	if (e->line >= upper_limit) e->line = upper_limit;
@@ -140,10 +138,10 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 
 		if (e->cursor_y == row && e->cursor_x == col) {
 		     charbuf_append(b, "\x1b[1;4;43m ", 9);
-             memset(&hexstr[1], '\0', 1);
-             if (hexstr_idx == 1 && e->mode == MODE_REPLACE)
+             memset(hexstr()+1, '\0', 1);
+             if (hexstr_idx() == 1 && e->mode == MODE_REPLACE)
                  hexlen = snprintf(hex, sizeof(hex), "%02x",
-                     curr_byte & 0xF | hex2bin(hexstr) & 0xF << 4);
+                     curr_byte & 0xF | hex2bin(hexstr()) & 0xF << 4);
 		} else {
 		     charbuf_append(b, "\x1b[3;3;44m ", 9);
 		}
@@ -176,7 +174,7 @@ void editor_render_ascii(struct editor* e, int rownum, unsigned int start_offset
 		if (isprint(c)) {
 			charbuf_appendf(b, "%c", c);
 		} else {
-			charbuf_append(b, ".", 6);
+			charbuf_append(b, ".", 1);
 		}
 	}
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);
@@ -210,42 +208,10 @@ void editor_scroll_to_offset(struct editor* e, unsigned int offset) {
 	editor_cursor_at_offset(e, offset, &(e->cursor_x), &(e->cursor_y));
 }
 
-
-int editor_read_hex_input(struct editor* e, char* out) {
-
-	int next = read_key();
-
-	if (next == KEY_ESC) {
-		editor_setmode(e, MODE_NORMAL);
-		memset(hexstr, '\0', 3);
-		hexstr_idx = 0;
-		return -1;
-	}
-
-	if (!isprint(next)) {
-//		editor_statusmessage(e, STATUS_ERROR, "Error: unprintable character (%02x)", next);
-		return -1;
-	}
-	if (!isxdigit(next)) {
-//		editor_statusmessage(e, STATUS_ERROR, "Error: '%c' (%02x) is not valid hex", next, next);
-		return -1;
-	}
-
-	hexstr[hexstr_idx++] = next;
-
-	if (hexstr_idx >= 2) {
-		*out = hex2bin(hexstr);
-		memset(hexstr, '\0', 3);
-		hexstr_idx = 0;
-		return 0;
-	}
-
-	return -1;
-}
-
-
-void editor_insert_byte(struct editor* e, char x, bool after) {
-	int offset = editor_offset_at_cursor(e);
+void editor_insert_byte_hex(struct editor* e, char x, bool after) {
+    hexstr_set(0,0); hexstr_set(1,0); hexstr_set(2,0);
+	hexstr_idx_set(0);
+    int offset = editor_offset_at_cursor(e);
 	editor_insert_byte_at_offset(e, offset, x, after);
 }
 
@@ -258,7 +224,9 @@ void editor_insert_byte_at_offset(struct editor* e, unsigned int offset, char x,
 	e->dirty = true;
 }
 
-void editor_replace_byte(struct editor* e, char x) {
+void editor_replace_byte_hex(struct editor* e, char x) {
+    hexstr_set(0,0); hexstr_set(1,0); hexstr_set(2,0);
+	hexstr_idx_set(0);
 	unsigned int offset = editor_offset_at_cursor(e);
 	unsigned char prev = e->contents[offset];
 	e->contents[offset] = x;
@@ -266,102 +234,5 @@ void editor_replace_byte(struct editor* e, char x) {
 	editor_statusmessage(e, STATUS_INFO, "Replaced byte at offset %09x with %02x", offset, (unsigned char) x);
 	e->dirty = true;
 
-}
-
-void editor_process_keypress_hex(struct editor* e) {
-
-	if (e->mode & (MODE_INSERT | MODE_APPEND)) {
-		char out = 0;
-		if (editor_read_hex_input(e, &out) != -1) {
-		    hexstr[0] = 0; hexstr[1] = 0; hexstr[2] = 0;
-		    hexstr_idx = 0;
-			editor_insert_byte(e, out, e->mode & MODE_APPEND);
-			editor_move_cursor(e, KEY_RIGHT, 1);
-		}
-		return;
-	}
-
-	if (e->mode & (MODE_INSERT_ASCII | MODE_APPEND_ASCII)) {
-		char c = read_key();
-		if (c == KEY_ESC) {
-			editor_setmode(e, MODE_NORMAL); return;
-		}
-		editor_insert_byte(e, c, e->mode & MODE_APPEND_ASCII);
-		editor_move_cursor(e, KEY_RIGHT, 1);
-		return;
-	}
-
-	if (e->mode & MODE_REPLACE_ASCII) {
-		char c = read_key();
-		if (c == KEY_ESC) {
-			editor_setmode(e, MODE_NORMAL);
-			return;
-		}
-
-		if (e->content_length > 0) {
-			editor_replace_byte(e, c);
-		} else {
-			editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
-		}
-		return;
-	}
-
-	if (e->mode & MODE_REPLACE) {
-		char out = 0;
-		if (e->content_length > 0) {
-			if (editor_read_hex_input(e, &out) != -1) {
-                hexstr[0] = 0; hexstr[1] = 0; hexstr[2] = 0;
-                hexstr_idx = 0;
-				editor_replace_byte(e, out);
-			}
-		} else {
-			editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
-		}
-		return;
-	}
-
-	if (e->mode & MODE_COMMAND) {
-		char cmd[INPUT_BUF_SIZE];
-		int c = editor_read_string(e, cmd, INPUT_BUF_SIZE);
-		if (c == KEY_ENTER && strlen(cmd) > 0) {
-			editor_process_command(e, cmd);
-		}
-		return;
-	}
-
-	int c = read_key();
-	if (c == -1) {
-		return;
-	}
-
-	switch (c) {
-	case KEY_ESC:    editor_setmode(e, MODE_NORMAL); return;
-	case KEY_CTRL_Q: exit(0); return;
-	case KEY_CTRL_S: editor_writefile(e); return;
-	}
-
-	if (e->mode & MODE_NORMAL)
-	{
-		switch (c) {
-		case KEY_UP:
-		case KEY_DOWN:
-		case KEY_RIGHT:
-		case KEY_LEFT: editor_move_cursor(e, c, 1); break;
-		case 'd': editor_setmode(e, MODE_DASM);         return;
-//		case 'a': editor_setmode(e, MODE_APPEND);       return;
-//		case 'A': editor_setmode(e, MODE_APPEND_ASCII); return;
-//		case 'i': editor_setmode(e, MODE_INSERT);       return;
-//		case 'I': editor_setmode(e, MODE_INSERT_ASCII); return;
-		case 'r': editor_setmode(e, MODE_REPLACE);      return;
-		case 'R': editor_setmode(e, MODE_REPLACE_ASCII);return;
-		case ':': editor_setmode(e, MODE_COMMAND);      return;
-		case KEY_HOME: e->cursor_x = 1; return;
-		case KEY_END:  editor_move_cursor(e, KEY_RIGHT, e->octets_per_line - e->cursor_x); return;
-		case KEY_CTRL_U:
-		case KEY_PAGEUP:   editor_scroll(e, -(e->screen_rows) + 2); return;
-		case KEY_CTRL_D:
-		case KEY_PAGEDOWN: editor_scroll(e, e->screen_rows - 2); return;
-		}
-	}
 }
 

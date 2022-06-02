@@ -50,6 +50,13 @@ struct editor {
 	char searchstr[INPUT_BUF_SIZE]; // the current search string or NULL if none.
 };
 
+int  hexstr_idx_inc();
+int  hexstr_idx_set(int value);
+int  hexstr_idx();
+char *hexstr();
+char hexstr_set(int pos, int value);
+char hexstr_get(int pos);
+
 struct editor* editor_init();
 void editor_insert_byte(struct editor* e, char x, bool after);
 void editor_insert_byte_at_offset(struct editor* e, unsigned int offset, char x, bool after);

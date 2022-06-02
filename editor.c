@@ -344,14 +344,6 @@ int editor_read_string(struct editor* e, char* dst, int len) {
 	return c;
 }
 
-
-void editor_process_keypress(struct editor* e) {
-    switch (e->mode) {
-        case MODE_DASM: editor_process_keypress_dasm(e); break;
-        default:        editor_process_keypress_hex(e);
-    }
-}
-
 struct editor* editor_init() {
 	struct editor* e = malloc(sizeof(struct editor));
 	e->octets_per_line = 16;
@@ -377,3 +369,167 @@ void editor_free(struct editor* e) {
 	free(e->contents);
 	free(e);
 }
+
+void editor_replace_byte(struct editor* e, char x) {
+    switch (e->mode) {
+        case MODE_DASM: editor_replace_byte_dasm(e, x); break;
+        default:        editor_replace_byte_hex(e, x);
+    }
+}
+
+void editor_insert_byte(struct editor* e, char x, bool after) {
+    switch (e->mode) {
+        case MODE_DASM: editor_insert_byte_dasm(e, x, after); break;
+        default:        editor_insert_byte_hex(e, x, after);
+    }
+}
+
+void editor_scroll(struct editor* e, int units) {
+    switch (e->mode) {
+        case MODE_DASM: editor_scroll_dasm(e, units); break;
+        default:        editor_scroll_hex(e, units);
+    }
+}
+
+void editor_move_cursor(struct editor* e, int dir, int amount) {
+    switch (e->mode) {
+        case MODE_DASM: editor_move_cursor_dasm(e, dir, amount); break;
+        default:        editor_move_cursor_hex(e, dir, amount);
+    }
+}
+
+int  _hexstr_idx = 0;
+char _hexstr[2 + 1];
+
+int  hexstr_idx_inc() { return _hexstr_idx++; }
+int  hexstr_idx_set(int value) { return _hexstr_idx = value; }
+int  hexstr_idx() { return _hexstr_idx; }
+char hexstr_set(int pos, int value) { return _hexstr[pos] = value; };
+char hexstr_get(int pos) { return _hexstr[pos]; };
+char* hexstr() { return _hexstr; };
+
+int editor_read_hex_input(struct editor* e, char* out) {
+
+	int next = read_key();
+
+	if (next == KEY_ESC) {
+		editor_setmode(e, MODE_NORMAL);
+		memset(hexstr(), '\0', 3);
+		hexstr_idx_set(0);
+		return -1;
+	}
+
+	if (!isprint(next)) {
+//		editor_statusmessage(e, STATUS_ERROR, "Error: unprintable character (%02x)", next);
+		return -1;
+	}
+	if (!isxdigit(next)) {
+//		editor_statusmessage(e, STATUS_ERROR, "Error: '%c' (%02x) is not valid hex", next, next);
+		return -1;
+	}
+
+	hexstr_set(hexstr_idx_inc(),next);
+
+	if (hexstr_idx() >= 2) {
+		*out = hex2bin(hexstr());
+		memset(hexstr(), '\0', 3);
+		hexstr_idx_set(0);
+		return 0;
+	}
+
+	return -1;
+}
+
+void editor_process_keypress(struct editor* e) {
+
+	if (e->mode & (MODE_INSERT | MODE_APPEND)) {
+		char out = 0;
+		if (editor_read_hex_input(e, &out) != -1) {
+			editor_insert_byte(e, out, e->mode & MODE_APPEND);
+			editor_move_cursor(e, KEY_RIGHT, 1);
+		}
+		return;
+	}
+
+	if (e->mode & (MODE_INSERT_ASCII | MODE_APPEND_ASCII)) {
+		char c = read_key();
+		if (c == KEY_ESC) {
+			editor_setmode(e, MODE_NORMAL); return;
+		}
+		editor_insert_byte(e, c, e->mode & MODE_APPEND_ASCII);
+		editor_move_cursor(e, KEY_RIGHT, 1);
+		return;
+	}
+
+	if (e->mode & MODE_REPLACE_ASCII) {
+		char c = read_key();
+		if (c == KEY_ESC) {
+			editor_setmode(e, MODE_NORMAL);
+			return;
+		}
+
+		if (e->content_length > 0) {
+			editor_replace_byte(e, c);
+		} else {
+			editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
+		}
+		return;
+	}
+
+	if (e->mode & MODE_REPLACE) {
+		char out = 0;
+		if (e->content_length > 0) {
+			if (editor_read_hex_input(e, &out) != -1) {
+				editor_replace_byte(e, out);
+			}
+		} else {
+			editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
+		}
+		return;
+	}
+
+	if (e->mode & MODE_COMMAND) {
+		char cmd[INPUT_BUF_SIZE];
+		int c = editor_read_string(e, cmd, INPUT_BUF_SIZE);
+		if (c == KEY_ENTER && strlen(cmd) > 0) {
+			editor_process_command(e, cmd);
+		}
+		return;
+	}
+
+	int c = read_key();
+	if (c == -1) {
+		return;
+	}
+
+	switch (c) {
+	case KEY_ESC:    editor_setmode(e, MODE_NORMAL); return;
+	case KEY_CTRL_Q: exit(0); return;
+	case KEY_CTRL_S: editor_writefile(e); return;
+	}
+
+	if (e->mode & MODE_NORMAL)
+	{
+		switch (c) {
+		case KEY_UP:
+		case KEY_DOWN:
+		case KEY_RIGHT:
+		case KEY_LEFT: editor_move_cursor(e, c, 1); break;
+		case 'd': editor_setmode(e, MODE_DASM);         return;
+//		case 'a': editor_setmode(e, MODE_APPEND);       return;
+//		case 'A': editor_setmode(e, MODE_APPEND_ASCII); return;
+//		case 'i': editor_setmode(e, MODE_INSERT);       return;
+//		case 'I': editor_setmode(e, MODE_INSERT_ASCII); return;
+		case 'r': editor_setmode(e, MODE_REPLACE);      return;
+		case 'R': editor_setmode(e, MODE_REPLACE_ASCII);return;
+		case ':': editor_setmode(e, MODE_COMMAND);      return;
+		case KEY_HOME: e->cursor_x = 1; return;
+		case KEY_END:  editor_move_cursor(e, KEY_RIGHT, e->octets_per_line - e->cursor_x); return;
+		case KEY_CTRL_U:
+		case KEY_PAGEUP:   editor_scroll(e, -(e->screen_rows) + 2); return;
+		case KEY_CTRL_D:
+		case KEY_PAGEDOWN: editor_scroll(e, e->screen_rows - 2); return;
+		}
+	}
+}
+
