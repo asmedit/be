@@ -74,7 +74,7 @@ void editor_openfile(struct editor* e, const char* filename) {
 		editor_statusmessage(e, STATUS_WARNING, "\"%s\" (%d bytes) [readonly]", e->filename, e->content_length);
 	} else {
 		editor_statusmessage(e, STATUS_INFO, "\"%s\" (%d bytes)", e->filename, e->content_length);
-		editor_statusmessage(e, STATUS_INFO, "Tip: use vi commands.");
+		editor_statusmessage(e, STATUS_INFO, "Press [d] for disassembly mode or [:] for commands.");
 	}
 
 	fclose(fp);
@@ -132,13 +132,15 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
 	char model[] = "";
     int current_offset =  editor_offset_at_cursor(e);
 	unsigned char active_byte = e->contents[current_offset];
-	banlen = snprintf(banner, sizeof(banner), "\x1b[1;1;42m Binary Editor [% 6s][64][HEX][%02x][%016x] Size:[%012i] ", "x86-64", active_byte, current_offset, e->content_length);
+	banlen = snprintf(banner, sizeof(banner),
+	   "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m % 12s [64][HEX][%02x][%016x] Size: %012iB     ",
+	   "Skylake", active_byte, current_offset, e->content_length);
 	charbuf_append(b, banner, banlen);
 
 	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
 	unsigned char val = e->contents[offset_at_cursor];
 	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
-	int file_position = snprintf(banner, sizeof(banner), "% 4d%% ", percentage);
+	int file_position = snprintf(banner, sizeof(banner), "\x1b[1;33m\x1b[46m% 4d%% ", percentage);
 	charbuf_append(b, banner, file_position);
 	charbuf_append(b, "\r\n", 2);
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);

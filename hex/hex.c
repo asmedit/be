@@ -113,7 +113,9 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 		unsigned char curr_byte = e->contents[offset];
 
 		if (offset % e->octets_per_line == 0) {
-			charbuf_appendf(b, "\x1b[12;3;45m%016x\x1b[0m", offset);
+            if (row + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m", offset);
+            else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
+            charbuf_appendf(b, "%016x\x1b[0m", offset);
 			memset(asc, '\0', sizeof(asc));
 			row_char_count = 0;
 			col = 0;
@@ -130,30 +132,30 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 		}
 
 		if (offset % e->grouping == 0) {
-		    if ((row_char_count % (e->octets_per_line / 4) != 0) || (offset % 16 == 0))
-		         charbuf_append(b, "\x1b[3;3;44m ", 11);
-		    else charbuf_append(b, "\x1b[3;3;44m-", 11);
+		//|| (offset % 16 == 0)
+		    if ((row_char_count % (e->octets_per_line / 4) != 0) )
+		         charbuf_appendf(b, "\x1b[0;36m\x1b[0;37m-");
+		    else charbuf_appendf(b, "\x1b[1;36m\x1b[0;36m ");
 			row_char_count++;
 		}
 
 
 		if (e->cursor_y == row && e->cursor_x == col) {
-		     charbuf_append(b, "\x1b[1;4;43m ", 9);
+		     charbuf_appendf(b, "\x1b[1;37m\x1b[43m");
              memset(hexstr()+1, '\0', 1);
              if (hexstr_idx() == 1 && e->mode == MODE_REPLACE)
                  hexlen = snprintf(hex, sizeof(hex), "%02x",
                      curr_byte & 0xF | hex2bin(hexstr()) & 0xF << 4);
 		} else {
-		     charbuf_append(b, "\x1b[3;3;44m ", 9);
+		     charbuf_appendf(b, "\x1b[4;94m");
 		}
 
         charbuf_append(b, hex, hexlen);
-	    charbuf_append(b, "\x1b[0m", 4);
-
+        charbuf_append(b, "\x1b[0m", 5);
 		row_char_count += 2;
 
 		if ((offset+1) % e->octets_per_line == 0) {
-			charbuf_append(b, "\x1b[1;6;44m ", 10);
+			charbuf_appendf(b, "\x1b[43m\x1b[0;37m \x1b[0;104m\x1b[1;37m");
 			int the_offset = offset + 1 - e->octets_per_line;
 			editor_render_ascii(e, row, the_offset, b);
 			charbuf_append(b, "\r\n", 2);
@@ -170,8 +172,8 @@ void editor_render_ascii(struct editor* e, int rownum, unsigned int start_offset
 		if (offset >= e->content_length) return;
 		cc++;
 		char c =  e->contents[offset];
-		if (rownum == e->cursor_y && cc == e->cursor_x) charbuf_append(b, "\x1b[1;3;43m", 10);
-		else charbuf_appendf(b, "\x1b[1;3;44m", 9);
+		if (rownum == e->cursor_y && cc == e->cursor_x) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
+		else charbuf_appendf(b, "\x1b[0;104m");
 		if (isprint(c)) {
 			charbuf_appendf(b, "%c", c);
 		} else {
