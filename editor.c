@@ -133,8 +133,8 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
     int current_offset =  editor_offset_at_cursor(e);
 	unsigned char active_byte = e->contents[current_offset];
 	banlen = snprintf(banner, sizeof(banner),
-	   "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m % 12s [64][HEX][%02x][%016x] Size: %012iB     ",
-	   "Skylake", active_byte, current_offset, e->content_length);
+	   "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m % 12s [%02i][HEX][%02x][%016x] Size: %012iB     ",
+	   "Skylake", e->seg_size, active_byte, current_offset, e->content_length);
 	charbuf_append(b, banner, banlen);
 
 	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
@@ -321,7 +321,8 @@ int editor_read_string(struct editor* e, char* dst, int len) {
 struct editor* editor_init() {
 	struct editor* e = malloc(sizeof(struct editor));
 	e->octets_per_line = 16;
-	e->grouping = 2;
+	e->grouping = 1;
+	e->seg_size = 64;
 	e->line = 0;
 	e->cursor_x = 1;
 	e->cursor_y = 1;

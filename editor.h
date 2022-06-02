@@ -48,6 +48,7 @@ struct editor {
 	char inputbuffer[INPUT_BUF_SIZE];
 	int inputbuffer_index;
 	char searchstr[INPUT_BUF_SIZE];
+	int seg_size;
 };
 
 int  hexstr_idx_inc();

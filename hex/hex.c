@@ -131,9 +131,9 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 			asc[offset % e->octets_per_line] = '.';
 		}
 
-		if (offset % e->grouping == 0) {
-		//|| (offset % 16 == 0)
-		    if ((row_char_count % (e->octets_per_line / 4) != 0) )
+//		if (offset % e->grouping == 0)
+		{
+		    if ((row_char_count % (e->seg_size / 8) != 0) )
 		         charbuf_appendf(b, "\x1b[0;36m\x1b[0;37m-");
 		    else charbuf_appendf(b, "\x1b[1;36m\x1b[0;36m ");
 			row_char_count++;
