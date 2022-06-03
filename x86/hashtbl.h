@@ -41,6 +41,7 @@
 #define NASM_HASHTBL_H
 
 #include "nasmlib.h"
+#include <stdint.h>
 
 struct hash_node {
     uint64_t hash;

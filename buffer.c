@@ -8,7 +8,7 @@
 #include "buffer.h"
 
 struct charbuf* charbuf_create() {
-	struct charbuf* b = malloc(sizeof(struct charbuf));
+        struct charbuf* b = malloc(sizeof(struct charbuf));
 	if (b) {
 		b->contents = NULL;
 		b->len = 0;

@@ -41,6 +41,7 @@
 #include "compiler.h"
 #include "bytesex.h"
 #include <time.h>
+#include <stdint.h>
 
 /*
  * Useful construct for private values

@@ -40,6 +40,7 @@
 #ifndef NASM_TABLES_H
 #define NASM_TABLES_H
 
+#include <stdint.h>
 #include "compiler.h"
 #include "insnsi.h"		/* For enum opcode */
 

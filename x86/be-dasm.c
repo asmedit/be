@@ -294,20 +294,24 @@ int main(int argc, char **argv)
 
     p = q = buffer;
     nextsync = next_sync(offset, &synclen);
+
     do {
+
         uint32_t to_read = buffer + sizeof(buffer) - p;
+
 	if ((nextsync || synclen) &&
-	    to_read > nextsync - offset - (p - q))
+            to_read > nextsync - offset - (p - q))
             to_read = nextsync - offset - (p - q);
-        if (to_read) {
-            lenread = fread(p, 1, to_read, fp);
-            if (lenread == 0)
-                eof = true;     /* help along systems with bad feof */
-        } else
-            lenread = 0;
+
+        if (to_read) { lenread = fread(p, 1, to_read, fp);
+                       if (lenread == 0) eof = true; } else lenread = 0;
+
         p += lenread;
-        if ((nextsync || synclen) &&
-	    (uint32_t)offset == nextsync) {
+
+        if ((nextsync || synclen) && (uint32_t)offset == nextsync) {
+
+            fprintf(stdout, "HELLO\n");
+
             if (synclen) {
                 fprintf(stdout, "%08"PRIX64"  skipping 0x%"PRIX32" bytes\n",
 			offset, synclen);
@@ -316,26 +320,34 @@ int main(int argc, char **argv)
             }
             p = q = buffer;
             nextsync = next_sync(offset, &synclen);
+
         }
+
         while (p > q && (p - q >= INSN_MAX || lenread == 0)) {
+
             lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf),
 			    bits, offset, autosync, &prefer);
+
             if (!lendis || lendis > (p - q)
                 || ((nextsync || synclen) &&
 		    (uint32_t)lendis > nextsync - offset))
                 lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), bits);
+
             output_ins(offset, (uint8_t *) q, lendis, outbuf);
+
             q += lendis;
             offset += lendis;
+
         }
+
         if (q >= buffer + INSN_MAX) {
             uint8_t *r = (uint8_t *) buffer, *s = (uint8_t *) q;
             int count = p - q;
-            while (count--)
-                *r++ = *s++;
+            while (count--) *r++ = *s++;
             p -= (q - buffer);
             q = buffer;
         }
+
     } while (lenread > 0 || !(eof || feof(fp)));
 
     if (fp != stdin)

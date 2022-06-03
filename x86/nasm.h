@@ -53,6 +53,7 @@
 #include "regs.h"
 #include "srcfile.h"
 #include "error.h"
+#include <stdint.h>
 
 /* Program name for error messages etc. */
 extern const char *_progname;
