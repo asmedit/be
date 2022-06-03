@@ -7,6 +7,7 @@
 
 #include "editor.h"
 #include "terminal.h"
+#include "dasm/dasm.h"
 
 static struct editor* e;
 volatile sig_atomic_t resizeflag;
@@ -90,6 +91,7 @@ int main(int argc, char* argv[]) {
 	term_state_save();
 	atexit(editor_exit);
 	clear_screen();
+        nasm_init();
 
 	while (true) {
 		editor_refresh_screen(e);
