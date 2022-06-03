@@ -13,6 +13,7 @@
 #include "terminal.h"
 
 static struct termios orig_termios;
+char seq[4];
 
 int hex2bin(const char* s) {
 	int ret=0;
