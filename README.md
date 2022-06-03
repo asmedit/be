@@ -1,7 +1,7 @@
 Binary Editor
 =============
 
-The `be` hacker editor is a contemporary scalable `hiew` replacement.
+The `be` hacker editor aims to be a contemporary scalable `hiew` replacement.
 Basically it is the `hx` hex editor with disassembly mode.
 The `nasm` is used as disassembly library with support of 16, 32, 64
 segment sizes and all Intel extensions:
