@@ -19,6 +19,7 @@
 #include "../editor.h"
 #include "../terminal.h"
 
+#include "../hex/hex.h"
 #include "dasm.h"
 
 // 120-column Layout: 16-32-64
@@ -42,8 +43,7 @@
 char buffer[INSN_MAX * 2], *p, *ep, *q;
 char outbuf[256];
 uint32_t nextsync, synclen, initskip = 0L;
-int lenread;
-int32_t lendis;
+int32_t lendis, lenins;
 bool autosync = false;
 int bits = 16, b;
 bool eof = false;
@@ -61,10 +61,52 @@ void nasm_init() {
     init_sync();
 }
 
-void editor_render_dasm(struct editor* e, struct charbuf* b) {
-    p = q = buffer;
-    nextsync = next_sync(offset, &synclen);
+void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, uint8_t *data, int datalen, char *insn)
+{
+    int bytes; int BPL = 8;
+
+    if (i + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
+    else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
+    charbuf_appendf(b, "%016x\x1b[0m ", offset);
+
+    bytes = 0;
+    while (datalen > 0 && bytes < BPL*2) { charbuf_appendf(b, "%02X", *data++); bytes++; datalen--; }
+    charbuf_appendf(b, "\x1b[0m ");
+    charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
+    for (int i=0; i < 2 * (BPL-bytes); i++) charbuf_appendf(b, " ");
+
+    charbuf_appendf(b, "\x1b[0m ");
+    if (i + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
+    else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
+
+    lenins = strlen(insn);
+    charbuf_appendf(b, "%s", insn);
+    for (int i=0; i < 46 - lenins; i++) charbuf_appendf(b, " ");
+    charbuf_appendf(b, "\r\n");
+
 }
+
+void editor_render_dasm(struct editor* e, struct charbuf* b) {
+    bits = e->seg_size;
+    p = q = b->contents;
+    nextsync = next_sync(offset, &synclen);
+    p += e->content_length;
+    offset = editor_offset_at_cursor(e);
+
+    for (int i=0;i<30;i++) {
+
+        lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), bits, offset, autosync, &prefer);
+        if (!lendis || lendis > (p - q) || ((nextsync || synclen) && (uint32_t)lendis > nextsync - offset))
+            lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), bits);
+
+        output_inst(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
+
+        q += lendis;
+        offset += lendis;
+
+    }
+}
+
 
 void editor_move_cursor_dasm(struct editor* e, int dir, int amount) {
 }

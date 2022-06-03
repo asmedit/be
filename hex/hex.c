@@ -113,7 +113,7 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 		unsigned char curr_byte = e->contents[offset];
 
 		if (offset % e->octets_per_line == 0) {
-            if (row + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m", offset);
+            if (row + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
             else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
             charbuf_appendf(b, "%016x\x1b[0m", offset);
 			memset(asc, '\0', sizeof(asc));
