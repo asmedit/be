@@ -8,6 +8,10 @@ segment sizes and all Intel extensions:
 MMX, SSE, SSE2, SSE3, SSE4.1 SSE4.2, SSE5, KNI, AVX, AVX-2, AVX-512,
 AES, AMX, TSX, MPX, FMA, VNNI, GFNI, SGX, CET, PKU.
 
+In the future `be` should have `macho`, `elf`, and `pe` containers
+support along with RISC-V and AArch64 disassemblers.
+Unfortunately I couldn't find appropriate ARM disassemblers codebase to derive.
+
 <img width="816" alt="Screenshot 2022-06-02 at 12 31 59" src="https://user-images.githubusercontent.com/144776/171601023-92d28a16-cf44-43e1-b888-3812e981cf90.png">
 
 Credits
