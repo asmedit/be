@@ -7,10 +7,11 @@ The `nasm` is used as disassembly library with support of 16, 32, 64 segment siz
 MMX, SSE, SSE2, SSE3, SSE4.1 SSE4.2, SSE5, KNI, AVX, AVX-2, AVX-512, AES, AMX, TSX, MPX, FMA, VNNI, GFNI, SGX, CET, PKU.
 Their x86 disassembler one of the most compact and sane in industry, however it should be reduced to 32K.
 
-In the future `be` should have `macho`, `elf`, and `pe` containers support along with RISC-V and AArch64 disassemblers.
+In the future there will `be` containing parsers for `macho`, `elf`, and `pe` formats along with RISC-V and AArch64 disassemblers.
 Unfortunately I couldn't find appropriate ARM disassembler codebase to derive so maybe I should finish
 <a href="https://tonpa.guru/stream/2019/2019-06-09%20A64%20Assembler.htm">one of my own</a>.
 Furtunately MIPS and PowerPC disassemblers are easy to implement.
+
 There could also `be` pivot for 8-bit CPU 8080/8085/Z80, 6502, HC08
 or for bytecode of virtual machines: JVM, CLR, BEAM, EBC (EFI Byte Code),
 which are also relatively easy to implement. Despite a lot of plugins it should remain small and concise,
