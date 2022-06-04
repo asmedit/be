@@ -12,7 +12,7 @@ Their x86 disassembler one of the most compact and sane in industry, however it 
 In the future `be` should have `macho`, `elf`, and `pe` containers
 support along with RISC-V and AArch64 disassemblers.
 Unfortunately I couldn't find appropriate ARM disassembler codebase to derive
-so maybe I should finish <a href="https://tonpa.guru/stream/2019/2019-06-09%20A64%20Assembler.htm">one of my own</a>. Futunately MIPS and PowerPC disassemblers are easy to implement. There could also `be` 8-bit pivot for 8080/8085/Z80, 6502, HC08, F8 or for bytecode of virtual machines: BEAM, EBC, etc.
+so maybe I should finish <a href="https://tonpa.guru/stream/2019/2019-06-09%20A64%20Assembler.htm">one of my own</a>. Furtunately MIPS and PowerPC disassemblers are easy to implement. There could also `be` 8-bit pivot for 8080/8085/Z80, 6502, HC08, F8 or for bytecode of virtual machines: BEAM, EBC, which also are easy to implement.
 
 The `be` default used for HEX view is 192-bit width byte stream and for ASM view is 64-bit mode EM64T 16-byte instruction pipeline. For comfortable usage this requires 120 column terminal.
 
