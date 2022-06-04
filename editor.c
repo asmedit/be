@@ -15,6 +15,28 @@
 #include "editor.h"
 #include "terminal.h"
 
+struct editor* editor_init() {
+	struct editor* e = malloc(sizeof(struct editor));
+	e->octets_per_line = 24;
+	e->grouping = 1;
+	e->seg_size = 64;
+	e->line = 0;
+	e->cursor_x = 1;
+	e->cursor_y = 1;
+	e->filename = NULL;
+	e->contents = NULL;
+	e->content_length = 0;
+	e->dirty = false;
+	memset(e->status_message, '\0', sizeof(e->status_message));
+	e->mode = MODE_NORMAL;
+	e->view = VIEW_HEX;
+	memset(e->inputbuffer, '\0', sizeof(e->inputbuffer));
+	e->inputbuffer_index = 0;
+	memset(e->searchstr, '\0', sizeof(e->searchstr));
+	get_window_size(&(e->screen_rows), &(e->screen_cols));
+	return e;
+}
+
 void editor_newfile(struct editor* e, const char* filename) {
 	e->filename = malloc(strlen(filename) + 1);
 	strncpy(e->filename, filename, strlen(filename) + 1);
@@ -326,27 +348,6 @@ int editor_read_string(struct editor* e, char* dst, int len) {
 	return c;
 }
 
-struct editor* editor_init() {
-	struct editor* e = malloc(sizeof(struct editor));
-	e->octets_per_line = 24;
-	e->grouping = 1;
-	e->seg_size = 64;
-	e->line = 0;
-	e->cursor_x = 1;
-	e->cursor_y = 1;
-	e->filename = NULL;
-	e->contents = NULL;
-	e->content_length = 0;
-	e->dirty = false;
-	memset(e->status_message, '\0', sizeof(e->status_message));
-	e->mode = MODE_NORMAL;
-	e->view = VIEW_HEX;
-	memset(e->inputbuffer, '\0', sizeof(e->inputbuffer));
-	e->inputbuffer_index = 0;
-	memset(e->searchstr, '\0', sizeof(e->searchstr));
-	get_window_size(&(e->screen_rows), &(e->screen_cols));
-	return e;
-}
 
 void editor_free(struct editor* e) {
 	free(e->filename);
