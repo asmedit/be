@@ -18,7 +18,6 @@ or for bytecode of virtual machines: JVM, CLR, BEAM, EBC (EFI Byte Code),
 which are also relatively easy to implement. Despite a lot of plugins it should remain small and concise,
 the only feature it should have for release is an annotation tool for coloring and commenting the dump.
 This should be a hacker's notepad, patch tool or reverse engineering viewer.
-The second optional feature should be the default text mode viewer and editor.
 
 The `be` default used for ASM view is 64-bit mode EM64T 16-byte
 instruction pipeline and for HEX view is 192-bit width byte stream.
