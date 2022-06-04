@@ -68,7 +68,7 @@ void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, ui
     if (i + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
     else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
     charbuf_appendf(b, "%016x\x1b[0m ", offset);
-
+    charbuf_appendf(b, "\x1b[4;94m");
     while (datalen > 0 && bytes < dump_width * 2) { charbuf_appendf(b, "%02X", *data++); bytes++; datalen--; }
     charbuf_appendf(b, "\x1b[0m ");
     charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
@@ -80,7 +80,7 @@ void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, ui
 
     lenins = strlen(insn);
     charbuf_appendf(b, "%s", insn);
-    for (int i=0; i < 64 - lenins; i++) charbuf_appendf(b, " ");
+    for (int i=0; i < 62 - lenins; i++) charbuf_appendf(b, " ");
     charbuf_appendf(b, "\r\n");
 
 }

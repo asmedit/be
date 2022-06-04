@@ -151,8 +151,8 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
 	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
 	charbuf_appendf(b, "\x1b[1;33m\x1b[46m");
 	int width = e->screen_cols - (16+32+64) - 38;
-	char *format = "% 38d%% ";
-	if (e->view == VIEW_HEX) { width = e->screen_cols - (16+48+16) - 4; format = "% 4d%% "; }
+	char *format = "% 36d%% ";
+	if (e->view == VIEW_HEX) { width = e->screen_cols - (16 + (e->octets_per_line * 4)) - 4; format = "% 36d%% "; }
 	int file_position = snprintf(banner, sizeof(banner), format, percentage);
 	charbuf_append(b, banner, file_position);
 	charbuf_appendf(b, "\x1b[1;36m\x1b[0;36m");
@@ -328,7 +328,7 @@ int editor_read_string(struct editor* e, char* dst, int len) {
 
 struct editor* editor_init() {
 	struct editor* e = malloc(sizeof(struct editor));
-	e->octets_per_line = 16;
+	e->octets_per_line = 24;
 	e->grouping = 1;
 	e->seg_size = 64;
 	e->line = 0;
