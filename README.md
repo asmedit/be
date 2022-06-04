@@ -13,9 +13,11 @@ support along with RISC-V and AArch64 disassemblers.
 Unfortunately I couldn't find appropriate ARM disassembler codebase to derive
 so maybe I should finish <a href="https://tonpa.guru/stream/2019/2019-06-09%20A64%20Assembler.htm">one of my own</a>.
 
-<img width="816" alt="Screenshot 2022-06-02 at 12 31 59" src="https://user-images.githubusercontent.com/144776/171601023-92d28a16-cf44-43e1-b888-3812e981cf90.png">
 
-<img width="817" alt="Screenshot 2022-06-04 at 02 27 15" src="https://user-images.githubusercontent.com/144776/171966478-a1876b9b-2574-4ff4-a184-b38e7f9206e2.png">
+<img width="1250" alt="Screenshot 2022-06-04 at 09 23 11" src="https://user-images.githubusercontent.com/144776/171987389-7cafd20d-cdd7-4f39-9c1e-20c40915cc13.png">
+
+<img width="1250" alt="Screenshot 2022-06-04 at 09 23 00" src="https://user-images.githubusercontent.com/144776/171987401-a0b57cd3-2c00-4a62-8df6-741f871c5087.png">
+
 
 Credits
 -------
