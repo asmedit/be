@@ -1,8 +1,15 @@
 #ifndef XT_EDITOR_H
 #define XT_EDITOR_H
 
+#include <unistd.h>
+#include <sys/ioctl.h>
 #include <stdbool.h>
 #include "buffer.h"
+
+enum editor_view {
+    VIEW_HEX = 1,
+    VIEW_ASM = 2,
+};
 
 enum editor_mode {
 	MODE_APPEND        = 1 << 0,
@@ -14,7 +21,6 @@ enum editor_mode {
 	MODE_REPLACE       = 1 << 6,
 	MODE_COMMAND       = 1 << 7,
 	MODE_SEARCH        = 1 << 8,
-	MODE_DASM          = 1 << 9,
 };
 
 enum search_direction {
@@ -42,6 +48,7 @@ struct editor {
 	bool dirty;
 	char* filename;
 	char* contents;
+	enum editor_view view;
 	unsigned int content_length;
 	enum status_severity status_severity;
 	char status_message[120];

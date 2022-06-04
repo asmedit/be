@@ -40,15 +40,15 @@
 #define DUMPWIN 32
 #define CODEWIN 64
 
+int dump_width = 16;
 char buffer[INSN_MAX * 2], *p, *ep, *q;
 char outbuf[256];
 uint32_t nextsync, synclen, initskip = 0L;
 int32_t lendis, lenins;
 bool autosync = false;
-int bits = 16, b;
 bool eof = false;
+int bits;
 iflag_t prefer;
-bool rn_error;
 unsigned long offset;
 char dump[LINES][DUMP];
 char code[LINES][CODE];
@@ -63,17 +63,16 @@ void nasm_init() {
 
 void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, uint8_t *data, int datalen, char *insn)
 {
-    int bytes; int BPL = 8;
+    int bytes=0;
 
     if (i + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
     else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
     charbuf_appendf(b, "%016x\x1b[0m ", offset);
 
-    bytes = 0;
-    while (datalen > 0 && bytes < BPL*2) { charbuf_appendf(b, "%02X", *data++); bytes++; datalen--; }
+    while (datalen > 0 && bytes < dump_width * 2) { charbuf_appendf(b, "%02X", *data++); bytes++; datalen--; }
     charbuf_appendf(b, "\x1b[0m ");
     charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
-    for (int i=0; i < 2 * (BPL-bytes); i++) charbuf_appendf(b, " ");
+    for (int i=0; i < 2 * (dump_width - bytes); i++) charbuf_appendf(b, " ");
 
     charbuf_appendf(b, "\x1b[0m ");
     if (i + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
@@ -81,7 +80,7 @@ void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, ui
 
     lenins = strlen(insn);
     charbuf_appendf(b, "%s", insn);
-    for (int i=0; i < 46 - lenins; i++) charbuf_appendf(b, " ");
+    for (int i=0; i < 64 - lenins; i++) charbuf_appendf(b, " ");
     charbuf_appendf(b, "\r\n");
 
 }
@@ -93,7 +92,7 @@ void editor_render_dasm(struct editor* e, struct charbuf* b) {
     p += e->content_length;
     offset = editor_offset_at_cursor(e);
 
-    for (int i=0;i<30;i++) {
+    for (int i=0; i < e->screen_rows - 2; i++) {
 
         lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), bits, offset, autosync, &prefer);
         if (!lendis || lendis > (p - q) || ((nextsync || synclen) && (uint32_t)lendis > nextsync - offset))

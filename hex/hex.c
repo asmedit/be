@@ -98,7 +98,7 @@ void editor_render_hex(struct editor* e, struct charbuf* b) {
 		start_offset = e->content_length - e->octets_per_line;
 	}
 
-	int bytes_per_screen = (e->screen_rows - 1) * e->octets_per_line;
+	int bytes_per_screen = (e->screen_rows - 2) * e->octets_per_line;
 	unsigned int end_offset = bytes_per_screen + start_offset - e->octets_per_line;
 	if (end_offset > e->content_length) {
 		end_offset = e->content_length;

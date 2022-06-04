@@ -7,6 +7,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include <stdio.h>
 
 #include "dasm/dasm.h"
 #include "hex/hex.h"
@@ -73,8 +75,9 @@ void editor_openfile(struct editor* e, const char* filename) {
 	if (access(filename, W_OK) == -1) {
 		editor_statusmessage(e, STATUS_WARNING, "\"%s\" (%d bytes) [readonly]", e->filename, e->content_length);
 	} else {
-		editor_statusmessage(e, STATUS_INFO, "\"%s\" (%d bytes)", e->filename, e->content_length);
-		editor_statusmessage(e, STATUS_INFO, "Press [d] for disassembly mode or [:] for commands.");
+//		editor_statusmessage(e, STATUS_INFO, "\"%s\" (%d bytes)", e->filename, e->content_length);
+//		editor_statusmessage(e, STATUS_INFO, "Terminal: %ix%i. You need enough width (120 columns) for disassembler.", e->screen_cols, e->screen_rows);
+//		editor_statusmessage(e, STATUS_INFO, "Views: press [a] for assembly view, [x] for hex view. ");
 	}
 
 	fclose(fp);
@@ -101,19 +104,25 @@ void editor_writefile(struct editor* e) {
 	fclose(fp);
 }
 
+void editor_setview(struct editor* e, enum editor_view view) {
+	e->view = view;
+	switch (e->view) {
+	    case VIEW_ASM: editor_statusmessage(e, STATUS_INFO, "View: ASM"); break;
+	    case VIEW_HEX: editor_statusmessage(e, STATUS_INFO, "View: HEX"); break;
+	}
+}
+
 void editor_setmode(struct editor* e, enum editor_mode mode) {
 	e->mode = mode;
 	switch (e->mode) {
-	case MODE_NORMAL:        editor_statusmessage(e, STATUS_INFO, ""); break;
-	case MODE_APPEND:        editor_statusmessage(e, STATUS_INFO, "-- APPEND -- "); break;
-	case MODE_APPEND_ASCII:  editor_statusmessage(e, STATUS_INFO, "-- APPEND ASCII --"); break;
-	case MODE_REPLACE_ASCII: editor_statusmessage(e, STATUS_INFO, "-- REPLACE ASCII --"); break;
-	case MODE_INSERT:        editor_statusmessage(e, STATUS_INFO, "-- INSERT --"); break;
-	case MODE_INSERT_ASCII:  editor_statusmessage(e, STATUS_INFO, "-- INSERT ASCII --"); break;
-	case MODE_REPLACE:       editor_statusmessage(e, STATUS_INFO, "-- REPLACE --"); break;
-	case MODE_COMMAND: break;
-	case MODE_SEARCH:  break;
-	case MODE_DASM:          editor_statusmessage(e, STATUS_INFO, "-- DASM --"); break;
+        case MODE_NORMAL:        editor_statusmessage(e, STATUS_INFO, ""); break;
+        case MODE_APPEND:        editor_statusmessage(e, STATUS_INFO, "Mode: APPEND"); break;
+        case MODE_APPEND_ASCII:  editor_statusmessage(e, STATUS_INFO, "Mode: APPEND ASCII"); break;
+        case MODE_REPLACE_ASCII: editor_statusmessage(e, STATUS_INFO, "Mode: REPLACE ASCII"); break;
+        case MODE_INSERT:        editor_statusmessage(e, STATUS_INFO, "Mode: INSERT"); break;
+        case MODE_INSERT_ASCII:  editor_statusmessage(e, STATUS_INFO, "Mode: INSERT ASCII"); break;
+        case MODE_REPLACE:       editor_statusmessage(e, STATUS_INFO, "Mode: REPLACE"); break;
+        case MODE_COMMAND: break;
 	}
 }
 
@@ -133,32 +142,33 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
     int current_offset =  editor_offset_at_cursor(e);
 	unsigned char active_byte = e->contents[current_offset];
 	banlen = snprintf(banner, sizeof(banner),
-	   "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m % 12s [%02i][HEX][%02x][%016x] Size: %012iB     ",
-	   "Skylake", e->seg_size, active_byte, current_offset, e->content_length);
+	   "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m % 12s [%02i][% 3s][%02x][%016x] Size: %012iB     ",
+	   "Skylake", e->seg_size, (e->view == VIEW_ASM ? "ASM" : "HEX"), active_byte, current_offset, e->content_length);
 	charbuf_append(b, banner, banlen);
 
 	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
 	unsigned char val = e->contents[offset_at_cursor];
 	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
-	int file_position = snprintf(banner, sizeof(banner), "\x1b[1;33m\x1b[46m% 4d%% ", percentage);
+	charbuf_appendf(b, "\x1b[1;33m\x1b[46m");
+	int width = e->screen_cols - (16+32+64) - 38;
+	char *format = "% 38d%% ";
+	if (e->view == VIEW_HEX) { width = e->screen_cols - (16+48+16) - 4; format = "% 4d%% "; }
+	int file_position = snprintf(banner, sizeof(banner), format, percentage);
 	charbuf_append(b, banner, file_position);
-	charbuf_append(b, "\r\n", 2);
+	charbuf_appendf(b, "\x1b[1;36m\x1b[0;36m");
+    for (int i=0; i < width;i++) charbuf_appendf(b, " ");
+	charbuf_appendf(b, "\r\n");
 	charbuf_append(b, "\x1b[0m\x1b[K", 7);
+
 }
 
-void editor_render_contents(struct editor* e, struct charbuf* b) {
-    switch (e->mode) {
-        case MODE_DASM: editor_render_dasm(e, b); break;
-        default:        editor_render_hex(e, b);
-    }
-}
 
 void editor_render_help(struct editor* e) {
 	(void) e;
 	struct charbuf* b = charbuf_create();
 	clear_screen();
 	charbuf_append(b, "\x1b[?25l", 6); // hide cursor
-	charbuf_appendf(b, "This is xt, version %s\r\n\n", XT_VERSION);
+	charbuf_appendf(b, "This is BE hacker editor, version %s\r\n\n", XT_VERSION);
 	charbuf_appendf(b,
 		"Available commands:\r\n"
 		"\r\n"
@@ -196,8 +206,6 @@ void editor_render_status(struct editor* e, struct charbuf* b) {
 	charbuf_append(b, e->status_message, maxchars);
 	charbuf_append(b, "\x1b[0m\x1b[0K", 8);
 }
-
-
 
 void editor_process_command(struct editor* e, const char* cmd) {
 	bool b = is_pos_num(cmd);
@@ -332,6 +340,7 @@ struct editor* editor_init() {
 	e->dirty = false;
 	memset(e->status_message, '\0', sizeof(e->status_message));
 	e->mode = MODE_NORMAL;
+	e->view = VIEW_HEX;
 	memset(e->inputbuffer, '\0', sizeof(e->inputbuffer));
 	e->inputbuffer_index = 0;
 	memset(e->searchstr, '\0', sizeof(e->searchstr));
@@ -346,30 +355,37 @@ void editor_free(struct editor* e) {
 }
 
 void editor_replace_byte(struct editor* e, char x) {
-    switch (e->mode) {
-        case MODE_DASM: editor_replace_byte_dasm(e, x); break;
+    switch (e->view) {
+        case VIEW_ASM: editor_replace_byte_dasm(e, x); break;
         default:        editor_replace_byte_hex(e, x);
     }
 }
 
 void editor_insert_byte(struct editor* e, char x, bool after) {
-    switch (e->mode) {
-        case MODE_DASM: editor_insert_byte_dasm(e, x, after); break;
+    switch (e->view) {
+        case VIEW_ASM: editor_insert_byte_dasm(e, x, after); break;
         default:        editor_insert_byte_hex(e, x, after);
     }
 }
 
 void editor_scroll(struct editor* e, int units) {
-    switch (e->mode) {
-        case MODE_DASM: editor_scroll_dasm(e, units); break;
+    switch (e->view) {
+        case VIEW_ASM:  editor_scroll_dasm(e, units); break;
         default:        editor_scroll_hex(e, units);
     }
 }
 
 void editor_move_cursor(struct editor* e, int dir, int amount) {
-    switch (e->mode) {
-        case MODE_DASM: editor_move_cursor_dasm(e, dir, amount); break;
+    switch (e->view) {
+        case VIEW_ASM: editor_move_cursor_dasm(e, dir, amount); break;
         default:        editor_move_cursor_hex(e, dir, amount);
+    }
+}
+
+void editor_render_contents(struct editor* e, struct charbuf* b) {
+    switch (e->view) {
+        case VIEW_ASM: editor_render_dasm(e, b); break;
+        case VIEW_HEX: editor_render_hex(e, b);
     }
 }
 
@@ -394,14 +410,8 @@ int editor_read_hex_input(struct editor* e, char* out) {
 		return -1;
 	}
 
-	if (!isprint(next)) {
-//		editor_statusmessage(e, STATUS_ERROR, "Error: unprintable character (%02x)", next);
-		return -1;
-	}
-	if (!isxdigit(next)) {
-//		editor_statusmessage(e, STATUS_ERROR, "Error: '%c' (%02x) is not valid hex", next, next);
-		return -1;
-	}
+	if (!isprint(next)) return -1;
+	if (!isxdigit(next)) return -1;
 
 	hexstr_set(hexstr_idx_inc(),next);
 
@@ -490,7 +500,8 @@ void editor_process_keypress(struct editor* e) {
 		case KEY_DOWN:
 		case KEY_RIGHT:
 		case KEY_LEFT: editor_move_cursor(e, c, 1); break;
-		case 'd': editor_setmode(e, MODE_DASM);         return;
+		case 'd': editor_setview(e, VIEW_ASM); return;
+		case 'x': editor_setview(e, VIEW_HEX); return;
 //		case 'a': editor_setmode(e, MODE_APPEND);       return;
 //		case 'A': editor_setmode(e, MODE_APPEND_ASCII); return;
 //		case 'i': editor_setmode(e, MODE_INSERT);       return;
@@ -511,8 +522,8 @@ void editor_process_keypress(struct editor* e) {
 void editor_refresh_screen(struct editor* e) {
 	struct charbuf* b = charbuf_create();
 
-	charbuf_append(b, "\x1b[?25l", 6);
-	charbuf_append(b, "\x1b[H", 3); // move the cursor top left
+    charbuf_append(b, "\x1b[?25l", 6);
+    charbuf_append(b, "\x1b[H", 3);
 
 	if (e->mode &
 			(MODE_REPLACE |
@@ -521,7 +532,6 @@ void editor_refresh_screen(struct editor* e) {
 			 MODE_APPEND_ASCII |
 			 MODE_REPLACE_ASCII |
 			 MODE_INSERT |
-			 MODE_DASM |
 			 MODE_INSERT_ASCII)) {
 
 		editor_render_header(e, b);

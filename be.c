@@ -85,13 +85,14 @@ int main(int argc, char* argv[]) {
 	resizeflag = 0;
 
 	e = editor_init();
-	e->seg_size = 16;
+	e->seg_size = 64;
 	editor_openfile(e, file);
 	enable_raw_mode();
 	term_state_save();
 	atexit(editor_exit);
 	clear_screen();
-        nasm_init();
+    nasm_init();
+
 
 	while (true) {
 		editor_refresh_screen(e);
