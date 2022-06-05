@@ -5,9 +5,8 @@ objects := editor.o buffer.o terminal.o hex/hex.o dasm/dasm.o \
 	x86/common.o x86/alloc.o x86/string.o \
 	x86/warnings.o x86/error.o x86/ver.o
 
-all: be x86/be-dasm
-x86/be-dasm: $(objects) x86/be-dasm.o
+all: be 
 be: $(objects) be.o
 
 clean:
-	$(RM) $(objects) be.o x86/be-dasm.o $(objects:.o=.d) be x86/be-dasm
+	$(RM) $(objects) be.o $(objects:.o=.d) be
