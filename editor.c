@@ -19,125 +19,130 @@ char* contents;
 int content_length = 0;
 
 struct editor* editor_init() {
-	struct editor* e = malloc(sizeof(struct editor));
-	e->octets_per_line = 24;
-	e->grouping = 1;
-	e->seg_size = 64;
-	e->line = 0;
-	e->cursor_x = 1;
-	e->cursor_y = 1;
-	e->filename = NULL;
-	e->contents = NULL;
-	e->content_length = 0;
-	e->dirty = false;
-	memset(e->status_message, '\0', sizeof(e->status_message));
-	e->mode = MODE_NORMAL;
-	e->view = VIEW_HEX;
-	memset(e->inputbuffer, '\0', sizeof(e->inputbuffer));
-	e->inputbuffer_index = 0;
-	memset(e->searchstr, '\0', sizeof(e->searchstr));
-	get_window_size(&(e->screen_rows), &(e->screen_cols));
-	return e;
+    struct editor* e = malloc(sizeof(struct editor));
+    e->octets_per_line = 24;
+    e->grouping = 1;
+    e->seg_size = 64;
+    e->line = 0;
+    e->cursor_x = 1;
+    e->cursor_y = 1;
+    e->filename = NULL;
+    e->contents = NULL;
+    e->content_length = 0;
+    e->dirty = false;
+    memset(e->status_message, '\0', sizeof(e->status_message));
+    e->mode = MODE_NORMAL;
+    e->view = VIEW_HEX;
+    memset(e->inputbuffer, '\0', sizeof(e->inputbuffer));
+    e->inputbuffer_index = 0;
+    memset(e->searchstr, '\0', sizeof(e->searchstr));
+    get_window_size(&(e->screen_rows), &(e->screen_cols));
+    return e;
 }
 
 void editor_newfile(struct editor* e, const char* filename) {
-	e->filename = malloc(strlen(filename) + 1);
-	strncpy(e->filename, filename, strlen(filename) + 1);
-	e->contents = malloc(0);
-	e->content_length = 0;
+    e->filename = malloc(strlen(filename) + 1);
+    strncpy(e->filename, filename, strlen(filename) + 1);
+    e->contents = malloc(0);
+    e->content_length = 0;
 }
 
 void editor_openfile(struct editor* e, const char* filename) {
-	FILE* fp = fopen(filename, "rb");
-	if (fp == NULL) {
-		if (errno == ENOENT) {
-			editor_newfile(e, filename);
-			return;
-		}
-		perror("Unable to open file");
-		exit(1);
-	}
+    FILE* fp = fopen(filename, "rb");
+    if (fp == NULL) {
+        if (errno == ENOENT) {
+            editor_newfile(e, filename);
+            return;
+        }
+        perror("Unable to open file");
+        exit(1);
+    }
 
-	struct stat statbuf;
-	if (stat(filename, &statbuf) == -1) {
-		perror("Cannot stat file");
-		exit(1);
-	}
-	if (!S_ISREG(statbuf.st_mode)) {
-		fprintf(stderr, "File '%s' is not a regular file\n", filename);
-		exit(1);
-	}
+    struct stat statbuf;
+    if (stat(filename, &statbuf) == -1) {
+        perror("Cannot stat file");
+        exit(1);
+    }
+
+    if (!S_ISREG(statbuf.st_mode)) {
+        fprintf(stderr, "File '%s' is not a regular file\n", filename);
+        exit(1);
+    }
 
 
-	if (statbuf.st_size <= 0) {
-		struct charbuf* buf = charbuf_create();
-		int c;
-		char tempbuf[1];
-		while ((c = fgetc(fp)) != EOF) {
-			tempbuf[0] = (char) c;
-			charbuf_append(buf, tempbuf, 1);
-		}
-		contents = buf->contents;
-		content_length = buf->len;
-	} else {
-		contents = malloc(sizeof(char) * statbuf.st_size);
-		content_length = statbuf.st_size;
+    if (statbuf.st_size <= 0) {
+        struct charbuf* buf = charbuf_create();
+        int c;
+        char tempbuf[1];
+        while ((c = fgetc(fp)) != EOF) { tempbuf[0] = (char) c; charbuf_append(buf, tempbuf, 1); }
+        contents = buf->contents;
+        content_length = buf->len;
+    } else {
+        contents = malloc(sizeof(char) * statbuf.st_size);
+        content_length = statbuf.st_size;
 
-		if (fread(contents, 1, statbuf.st_size, fp) < (size_t) statbuf.st_size) {
-			perror("Unable to read file contents");
-			free(contents);
-			exit(1);
-		}
-	}
+        if (fread(contents, 1, statbuf.st_size, fp) < (size_t) statbuf.st_size) {
+            perror("Unable to read file contents");
+            free(contents);
+            exit(1);
+        }
+    }
 
-	e->filename = malloc(strlen(filename) + 1);
-	strncpy(e->filename, filename, strlen(filename) + 1);
-	e->contents = contents;
-	e->content_length = content_length;
+    e->filename = malloc(strlen(filename) + 1);
+    strncpy(e->filename, filename, strlen(filename) + 1);
+    e->contents = contents;
+    e->content_length = content_length;
 
-	if (access(filename, W_OK) == -1) {
-		editor_statusmessage(e, STATUS_WARNING, "\"%s\" (%d bytes) [readonly]", e->filename, e->content_length);
-	} else {
+    if (access(filename, W_OK) == -1) {
+        editor_statusmessage(e, STATUS_WARNING, "\"%s\" (%d bytes) [readonly]", e->filename, e->content_length);
+    } else {
 //		editor_statusmessage(e, STATUS_INFO, "\"%s\" (%d bytes)", e->filename, e->content_length);
 //		editor_statusmessage(e, STATUS_INFO, "Terminal: %ix%i. You need enough width (120 columns) for disassembler.", e->screen_cols, e->screen_rows);
 //		editor_statusmessage(e, STATUS_INFO, "Views: press [a] for assembly view, [x] for hex view. ");
-	}
+    }
 
-	fclose(fp);
+    fclose(fp);
 }
 
 void editor_writefile(struct editor* e) {
-	assert(e->filename != NULL);
+    assert(e->filename != NULL);
 
-	FILE* fp = fopen(e->filename, "wb");
-	if (fp == NULL) {
-		editor_statusmessage(e, STATUS_ERROR, "Unable to open '%s' for writing: %s", e->filename, strerror(errno));
-		return;
-	}
+    FILE* fp = fopen(e->filename, "wb");
+    if (fp == NULL) {
+        editor_statusmessage(e, STATUS_ERROR, "Unable to open '%s' for writing: %s", e->filename, strerror(errno));
+        return;
+    }
 
-	size_t bw = fwrite(e->contents, sizeof(char), e->content_length, fp);
-	if (bw <= 0) {
-		editor_statusmessage(e, STATUS_ERROR, "Unable write to file: %s", strerror(errno));
-		return;
-	}
+    size_t bw = fwrite(e->contents, sizeof(char), e->content_length, fp);
+    if (bw <= 0) {
+        editor_statusmessage(e, STATUS_ERROR, "Unable write to file: %s", strerror(errno));
+        return;
+    }
 
-	editor_statusmessage(e, STATUS_INFO, "\"%s\", %d bytes written", e->filename, e->content_length);
-	e->dirty = false;
+    editor_statusmessage(e, STATUS_INFO, "\"%s\", %d bytes written", e->filename, e->content_length);
+    e->dirty = false;
 
-	fclose(fp);
+    fclose(fp);
 }
 
 void editor_setview(struct editor* e, enum editor_view view) {
-	e->view = view;
-	switch (e->view) {
-	    case VIEW_ASM: editor_statusmessage(e, STATUS_INFO, "View: ASM"); break;
-	    case VIEW_HEX: editor_statusmessage(e, STATUS_INFO, "View: HEX"); break;
-	}
+    e->view = view;
+    switch (e->view) {
+        case VIEW_ASM:
+            e->offset_dasm = editor_offset_at_cursor(e);
+            e->cursor_x = 1;
+            e->cursor_y = 1;
+            editor_statusmessage(e, STATUS_INFO, "View: ASM");
+            break;
+        case VIEW_HEX:
+            editor_statusmessage(e, STATUS_INFO, "View: HEX");
+            break;
+    }
 }
 
 void editor_setmode(struct editor* e, enum editor_mode mode) {
-	e->mode = mode;
-	switch (e->mode) {
+    e->mode = mode;
+    switch (e->mode) {
         case MODE_NORMAL:        editor_statusmessage(e, STATUS_INFO, ""); break;
         case MODE_APPEND:        editor_statusmessage(e, STATUS_INFO, "Mode: APPEND"); break;
         case MODE_APPEND_ASCII:  editor_statusmessage(e, STATUS_INFO, "Mode: APPEND ASCII"); break;
@@ -146,16 +151,16 @@ void editor_setmode(struct editor* e, enum editor_mode mode) {
         case MODE_INSERT_ASCII:  editor_statusmessage(e, STATUS_INFO, "Mode: INSERT ASCII"); break;
         case MODE_REPLACE:       editor_statusmessage(e, STATUS_INFO, "Mode: REPLACE"); break;
         case MODE_COMMAND: break;
-	}
+    }
 }
 
 int editor_statusmessage(struct editor* e, enum status_severity sev, const char* fmt, ...) {
-	va_list ap;
-	va_start(ap, fmt);
-	int x = vsnprintf(e->status_message, sizeof(e->status_message), fmt, ap);
-	va_end(ap);
-	e->status_severity = sev;
-	return x;
+    va_list ap;
+    va_start(ap, fmt);
+    int x = vsnprintf(e->status_message, sizeof(e->status_message), fmt, ap);
+    va_end(ap);
+    e->status_severity = sev;
+    return x;
 }
 
 void editor_render_header(struct editor* e, struct charbuf* b) {
@@ -187,173 +192,168 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
 
 
 void editor_render_help(struct editor* e) {
-	(void) e;
-	struct charbuf* b = charbuf_create();
-	clear_screen();
-	charbuf_append(b, "\x1b[?25l", 6); // hide cursor
-	charbuf_appendf(b, "This is BE hacker editor, version %s\r\n\n", XT_VERSION);
-	charbuf_appendf(b,
-		"Available commands:\r\n"
-		"\r\n"
-		"CTRL+Q  : Quit immediately without saving.\r\n"
-		"CTRL+S  : Save (in place).\r\n"
-		"Arrows  : Also moves the cursor around.\r\n"
-		"\r\n");
-	charbuf_appendf(b,
-		":       : Command mode. Commands can be typed and executed.\r\n"
-		"ESC     : Return to normal mode.\r\n"
-		"End     : Move cursor to end of the offset line.\r\n"
-		"Home    : Move cursor to the beginning of the offset line.\r\n"
-		"\r\n"
-	);
-	charbuf_appendf(b,
-		"Press any key to exit help.\r\n");
+    (void) e;
+    struct charbuf* b = charbuf_create();
+    clear_screen();
+    charbuf_append(b, "\x1b[?25l", 6); // hide cursor
+    charbuf_appendf(b, "This is BE hacker editor, version %s\r\n\n", XT_VERSION);
 
-	charbuf_draw(b);
+    charbuf_appendf(b,
+	"Available commands:\r\n"
+        "\r\n"
+        "CTRL+Q  : Quit immediately without saving.\r\n"
+        "CTRL+S  : Save (in place).\r\n"
+        "Arrows  : Also moves the cursor around.\r\n"
+        "\r\n");
 
-	read_key();
-	clear_screen();
+    charbuf_appendf(b,
+        ":       : Command mode. Commands can be typed and executed.\r\n"
+        "ESC     : Return to normal mode.\r\n"
+        "End     : Move cursor to end of the offset line.\r\n"
+        "Home    : Move cursor to the beginning of the offset line.\r\n"
+        "\r\n"
+    );
+
+    charbuf_appendf(b, "Press any key to exit help.\r\n");
+    charbuf_draw(b);
+    read_key();
+    clear_screen();
 }
 
 void editor_render_status(struct editor* e, struct charbuf* b) {
-	charbuf_appendf(b, "\x1b[%d;0H", e->screen_rows);
-	switch (e->status_severity) {
-      case STATUS_INFO:    charbuf_append(b, "\x1b[0;30;47m", 10); break; // black on white
-	  case STATUS_WARNING: charbuf_append(b, "\x1b[0;30;43m", 10); break; // black on yellow
-	  case STATUS_ERROR:   charbuf_append(b, "\x1b[1;37;41m", 10); break; // white on red
-	}
-	int maxchars = strlen(e->status_message);
-	if (e->screen_cols <= maxchars) {
-		maxchars = e->screen_cols;
-	}
-	charbuf_append(b, e->status_message, maxchars);
-	charbuf_append(b, "\x1b[0m\x1b[0K", 8);
+    charbuf_appendf(b, "\x1b[%d;0H", e->screen_rows);
+    switch (e->status_severity) {
+        case STATUS_INFO:    charbuf_append(b, "\x1b[0;30;47m", 10); break; // black on white
+        case STATUS_WARNING: charbuf_append(b, "\x1b[0;30;43m", 10); break; // black on yellow
+        case STATUS_ERROR:   charbuf_append(b, "\x1b[1;37;41m", 10); break; // white on red
+    }
+
+    int maxchars = strlen(e->status_message);
+    if (e->screen_cols <= maxchars) maxchars = e->screen_cols;
+
+    charbuf_append(b, e->status_message, maxchars);
+    charbuf_append(b, "\x1b[0m\x1b[0K", 8);
 }
 
 void editor_process_command(struct editor* e, const char* cmd) {
-	bool b = is_pos_num(cmd);
-	if (b) {
-		int offset = str2int(cmd, 0, e->content_length, e->content_length - 1);
-		editor_scroll_to_offset(e, offset);
-		editor_statusmessage(e, STATUS_INFO, "Positioned to offset 0x%09x (%d)", offset, offset);
-		return;
-	}
+    bool b = is_pos_num(cmd);
+    if (b) {
+        int offset = str2int(cmd, 0, e->content_length, e->content_length - 1);
+        editor_scroll_to_offset(e, offset);
+        editor_statusmessage(e, STATUS_INFO, "Positioned to offset 0x%09x (%d)", offset, offset);
+        return;
+    }
 
-	if (cmd[0] == '0' && cmd[1] == 'x') {
-		const char* ptr = &cmd[2];
-		if (!is_hex(ptr)) {
-			editor_statusmessage(e, STATUS_ERROR, "Error: %s is not valid base 16", ptr);
-			return;
-		}
+    if (cmd[0] == '0' && cmd[1] == 'x') {
+        const char* ptr = &cmd[2];
+        if (!is_hex(ptr)) {
+            editor_statusmessage(e, STATUS_ERROR, "Error: %s is not valid base 16", ptr);
+            return;
+        }
 
-		int offset = hex2int(ptr);
-		editor_scroll_to_offset(e, offset);
-		editor_statusmessage(e, STATUS_INFO, "Positioned to offset 0x%09x (%d)", offset, offset);
-		return;
-	}
+        int offset = hex2int(ptr);
+        editor_scroll_to_offset(e, offset);
+        editor_statusmessage(e, STATUS_INFO, "Positioned to offset 0x%09x (%d)", offset, offset);
+        return;
+    }
 
-	if (strncmp(cmd, "w", INPUT_BUF_SIZE) == 0) {
-		editor_writefile(e);
-		return;
-	}
+    if (strncmp(cmd, "w", INPUT_BUF_SIZE) == 0) {
+        editor_writefile(e);
+        return;
+    }
 
-	if (strncmp(cmd, "q", INPUT_BUF_SIZE) == 0) {
-		if (e->dirty) {
-			editor_statusmessage(e, STATUS_ERROR, "No write since last change (add ! to override)", cmd);
-			return;
-		} else {
-			exit(0);
-		}
-	}
+    if (strncmp(cmd, "q", INPUT_BUF_SIZE) == 0) {
+        if (e->dirty) {
+            editor_statusmessage(e, STATUS_ERROR, "No write since last change (add ! to override)", cmd);
+            return;
+        } else {
+            exit(0);
+        }
+    }
 
-	if (strncmp(cmd, "q!", INPUT_BUF_SIZE) == 0) {
-		exit(0);
-		return;
-	}
+    if (strncmp(cmd, "q!", INPUT_BUF_SIZE) == 0) {
+        exit(0);
+        return;
+    }
 
-	if (strncmp(cmd, "help", INPUT_BUF_SIZE) == 0) {
-		editor_render_help(e);
-		return;
-	}
+    if (strncmp(cmd, "help", INPUT_BUF_SIZE) == 0) {
+        editor_render_help(e);
+        return;
+    }
 
-	if (strncmp(cmd, "set", 3) == 0) {
-		char setcmd[INPUT_BUF_SIZE] = {0};
-		int setval = 0;
-		int items_read = sscanf(cmd, "set %[a-z]=%d", setcmd, &setval);
+    if (strncmp(cmd, "set", 3) == 0) {
+        char setcmd[INPUT_BUF_SIZE] = {0};
+        int setval = 0;
+        int items_read = sscanf(cmd, "set %[a-z]=%d", setcmd, &setval);
 
-		if (items_read != 2) {
-			editor_statusmessage(e, STATUS_ERROR, "set command format: `set cmd=num`");
-			return;
-		}
+        if (items_read != 2) {
+            editor_statusmessage(e, STATUS_ERROR, "set command format: `set cmd=num`");
+            return;
+        }
 
-		if (strcmp(setcmd, "octets") == 0 || strcmp(setcmd, "o") == 0) {
-			int octets = clampi(setval, 16, 64);
+        if (strcmp(setcmd, "octets") == 0 || strcmp(setcmd, "o") == 0) {
+            int octets = clampi(setval, 16, 64);
+            clear_screen();
+            int offset = editor_offset_at_cursor(e);
+            e->octets_per_line = octets;
+            editor_scroll_to_offset(e, offset);
+            editor_statusmessage(e, STATUS_INFO, "Octets per line set to %d", octets);
+            return;
+        }
 
-			clear_screen();
-			int offset = editor_offset_at_cursor(e);
-			e->octets_per_line = octets;
-			editor_scroll_to_offset(e, offset);
+        if (strcmp(setcmd, "bitness") == 0 || strcmp(setcmd, "b") == 0) {
+            int bitness = clampi(setval, 4, 16);
+            clear_screen();
+            e->seg_size = bitness;
+            editor_statusmessage(e, STATUS_INFO, "Bitness is set to %d", bitness);
+            return;
+        }
 
-			editor_statusmessage(e, STATUS_INFO, "Octets per line set to %d", octets);
-
-			return;
-		}
-
-		if (strcmp(setcmd, "grouping") == 0 || strcmp(setcmd, "g") == 0) {
-			int grouping = clampi(setval, 4, 16);
-			clear_screen();
-			e->grouping = grouping;
-
-			editor_statusmessage(e, STATUS_INFO, "Byte grouping set to %d", grouping);
-			return;
-		}
-
-		editor_statusmessage(e, STATUS_ERROR, "Unknown option: %s", setcmd);
-		return;
-	}
-
-	editor_statusmessage(e, STATUS_ERROR, "Command not found: %s", cmd);
+        editor_statusmessage(e, STATUS_ERROR, "Unknown option: %s", setcmd);
+        return;
+    }
+    editor_statusmessage(e, STATUS_ERROR, "Command not found: %s", cmd);
 }
 
 
 int editor_read_string(struct editor* e, char* dst, int len) {
-	int c = read_key();
-	if (c == KEY_ENTER || c == KEY_ESC) {
-		editor_setmode(e, MODE_NORMAL);
-		strncpy(dst, e->inputbuffer, len);
-		e->inputbuffer_index = 0;
-		memset(e->inputbuffer,  '\0', sizeof(e->inputbuffer));
-		return c;
-	}
+    int c = read_key();
+    if (c == KEY_ENTER || c == KEY_ESC) {
+        editor_setmode(e, MODE_NORMAL);
+        strncpy(dst, e->inputbuffer, len);
+        e->inputbuffer_index = 0;
+        memset(e->inputbuffer,  '\0', sizeof(e->inputbuffer));
+        return c;
+    }
 
-	if (c == KEY_BACKSPACE && e->inputbuffer_index > 0) {
-		e->inputbuffer_index--;
-		e->inputbuffer[e->inputbuffer_index] = '\0';
-		return c;
-	}
+    if (c == KEY_BACKSPACE && e->inputbuffer_index > 0) {
+        e->inputbuffer_index--;
+        e->inputbuffer[e->inputbuffer_index] = '\0';
+        return c;
+    }
 
-	if ((size_t) e->inputbuffer_index >= sizeof(e->inputbuffer) - 1) {
-		return c;
-	}
+    if ((size_t) e->inputbuffer_index >= sizeof(e->inputbuffer) - 1) {
+        return c;
+    }
 
-	if (c == KEY_BACKSPACE && e->inputbuffer_index == 0) {
-		editor_setmode(e, MODE_NORMAL);
-		return c;
-	}
+    if (c == KEY_BACKSPACE && e->inputbuffer_index == 0) {
+        editor_setmode(e, MODE_NORMAL);
+        return c;
+    }
 
-	if (!isprint(c)) {
-		return c;
-	}
+    if (!isprint(c)) {
+        return c;
+    }
 
-	e->inputbuffer[e->inputbuffer_index++] = c;
-	return c;
+    e->inputbuffer[e->inputbuffer_index++] = c;
+    return c;
 }
 
 
 void editor_free(struct editor* e) {
-	free(e->filename);
-	free(e->contents);
-	free(e);
+    free(e->filename);
+    free(e->contents);
+    free(e);
 }
 
 void editor_replace_byte(struct editor* e, char x) {
@@ -403,154 +403,134 @@ char* hexstr() { return _hexstr; };
 
 int editor_read_hex_input(struct editor* e, char* out) {
 
-	int next = read_key();
+    int next = read_key();
 
-	if (next == KEY_ESC) {
-		editor_setmode(e, MODE_NORMAL);
-		memset(hexstr(), '\0', 3);
-		hexstr_idx_set(0);
-		return -1;
-	}
+    if (next == KEY_ESC) {
+        editor_setmode(e, MODE_NORMAL);
+        memset(hexstr(), '\0', 3);
+        hexstr_idx_set(0);
+        return -1;
+    }
 
-	if (!isprint(next)) return -1;
-	if (!isxdigit(next)) return -1;
+    if (!isprint(next)) return -1;
+    if (!isxdigit(next)) return -1;
 
-	hexstr_set(hexstr_idx_inc(),next);
+    hexstr_set(hexstr_idx_inc(),next);
 
-	if (hexstr_idx() >= 2) {
-		*out = hex2bin(hexstr());
-		memset(hexstr(), '\0', 3);
-		hexstr_idx_set(0);
-		return 0;
-	}
+    if (hexstr_idx() >= 2) {
+        *out = hex2bin(hexstr());
+        memset(hexstr(), '\0', 3);
+        hexstr_idx_set(0);
+        return 0;
+    }
 
-	return -1;
+    return -1;
 }
 
 void editor_process_keypress(struct editor* e) {
 
-	if (e->mode & (MODE_INSERT | MODE_APPEND)) {
-		char out = 0;
-		if (editor_read_hex_input(e, &out) != -1) {
-			editor_insert_byte(e, out, e->mode & MODE_APPEND);
-			editor_move_cursor(e, KEY_RIGHT, 1);
-		}
-		return;
-	}
+    if (e->mode & (MODE_INSERT | MODE_APPEND)) {
+        char out = 0;
+        if (editor_read_hex_input(e, &out) != -1) {
+            editor_insert_byte(e, out, e->mode & MODE_APPEND);
+            editor_move_cursor(e, KEY_RIGHT, 1);
+        }
+        return;
+    }
 
-	if (e->mode & (MODE_INSERT_ASCII | MODE_APPEND_ASCII)) {
-		char c = read_key();
-		if (c == KEY_ESC) {
-			editor_setmode(e, MODE_NORMAL); return;
-		}
-		editor_insert_byte(e, c, e->mode & MODE_APPEND_ASCII);
-		editor_move_cursor(e, KEY_RIGHT, 1);
-		return;
-	}
+    if (e->mode & (MODE_INSERT_ASCII | MODE_APPEND_ASCII)) {
+        char c = read_key();
+        if (c == KEY_ESC) editor_setmode(e, MODE_NORMAL); return;
+        editor_insert_byte(e, c, e->mode & MODE_APPEND_ASCII);
+        editor_move_cursor(e, KEY_RIGHT, 1);
+        return;
+    }
 
-	if (e->mode & MODE_REPLACE_ASCII) {
-		char c = read_key();
-		if (c == KEY_ESC) {
-			editor_setmode(e, MODE_NORMAL);
-			return;
-		}
+    if (e->mode & MODE_REPLACE_ASCII) {
+        char c = read_key();
+        if (c == KEY_ESC) {
+            editor_setmode(e, MODE_NORMAL);
+            return;
+        }
 
-		if (e->content_length > 0) {
-			editor_replace_byte(e, c);
-		} else {
-			editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
-		}
-		return;
-	}
+        if (e->content_length > 0) {
+            editor_replace_byte(e, c);
+        } else {
+            editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
+        }
+        return;
+    }
 
-	if (e->mode & MODE_REPLACE) {
-		char out = 0;
-		if (e->content_length > 0) {
-			if (editor_read_hex_input(e, &out) != -1) {
-				editor_replace_byte(e, out);
-			}
-		} else {
-			editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
-		}
-		return;
-	}
+    if (e->mode & MODE_REPLACE) {
+        char out = 0;
+        if (e->content_length > 0) {
+            if (editor_read_hex_input(e, &out) != -1) {
+                editor_replace_byte(e, out);
+            }
+        } else {
+            editor_statusmessage(e, STATUS_ERROR, "File is empty, nothing to replace");
+        }
+        return;
+    }
 
-	if (e->mode & MODE_COMMAND) {
-		char cmd[INPUT_BUF_SIZE];
-		int c = editor_read_string(e, cmd, INPUT_BUF_SIZE);
-		if (c == KEY_ENTER && strlen(cmd) > 0) {
-			editor_process_command(e, cmd);
-		}
-		return;
-	}
+    if (e->mode & MODE_COMMAND) {
+        char cmd[INPUT_BUF_SIZE];
+        int c = editor_read_string(e, cmd, INPUT_BUF_SIZE);
+        if (c == KEY_ENTER && strlen(cmd) > 0) editor_process_command(e, cmd);
+        return;
+    }
 
-	int c = read_key();
-	if (c == -1) {
-		return;
-	}
+    int c = read_key();
+    if (c == -1) return;
 
-	switch (c) {
-            case KEY_ESC:    editor_setmode(e, MODE_NORMAL); return;
-            case KEY_CTRL_Q: exit(0); return;
-            case KEY_CTRL_S: editor_writefile(e); return;
-	}
+    switch (c) {
+        case KEY_ESC:    editor_setmode(e, MODE_NORMAL); return;
+        case KEY_CTRL_Q: exit(0); return;
+        case KEY_CTRL_S: editor_writefile(e); return;
+    }
 
-	if (e->mode & MODE_NORMAL)
-	{
-		switch (c) {
-		case KEY_UP:
-		case KEY_DOWN:
-		case KEY_RIGHT:
-		case KEY_LEFT: editor_move_cursor(e, c, 1); return;
-//		case '1': e->seg_size = 8;  return;
-		case '2': e->seg_size = 16; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size); return;
-		case '3': e->seg_size = 32; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size); return;
-		case '4': e->seg_size = 64; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size); return;
-		case 'd': editor_setview(e, VIEW_ASM); return;
-		case 'x': editor_setview(e, VIEW_HEX); return;
-//		case 'a': editor_setmode(e, MODE_APPEND);       return;
-//		case 'A': editor_setmode(e, MODE_APPEND_ASCII); return;
-//		case 'i': editor_setmode(e, MODE_INSERT);       return;
-//		case 'I': editor_setmode(e, MODE_INSERT_ASCII); return;
-		case 'r': editor_setmode(e, MODE_REPLACE);      return;
-		case 'R': editor_setmode(e, MODE_REPLACE_ASCII);return;
-		case ':': editor_setmode(e, MODE_COMMAND);      return;
-		case KEY_HOME: e->cursor_x = 1; return;
-		case KEY_END:  editor_move_cursor(e, KEY_RIGHT, e->octets_per_line - e->cursor_x); return;
-		case KEY_CTRL_U:
-		case KEY_PAGEUP:   editor_scroll(e, -(e->screen_rows) + 2); return;
-		case KEY_CTRL_D:
-		case KEY_PAGEDOWN: editor_scroll(e, e->screen_rows - 2); return;
-		}
-	}
+    if (e->mode & MODE_NORMAL)
+    {
+        switch (c) {
+        case KEY_UP:
+        case KEY_DOWN:
+        case KEY_RIGHT:
+        case KEY_LEFT: editor_move_cursor(e, c, 1); return;
+//      case '1': e->seg_size = 8;  return;
+        case '2': editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 16); return;
+        case '3': editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 32); return;
+        case '4': editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 64); return;
+        case 'd': editor_setview(e, VIEW_ASM); return;
+        case 'x': editor_setview(e, VIEW_HEX); return;
+//      case 'a': editor_setmode(e, MODE_APPEND);       return;
+//      case 'A': editor_setmode(e, MODE_APPEND_ASCII); return;
+//      case 'i': editor_setmode(e, MODE_INSERT);       return;
+//      case 'I': editor_setmode(e, MODE_INSERT_ASCII); return;
+        case 'r': editor_setmode(e, MODE_REPLACE);      return;
+        case 'R': editor_setmode(e, MODE_REPLACE_ASCII);return;
+        case ':': editor_setmode(e, MODE_COMMAND);      return;
+        case KEY_HOME: e->cursor_x = 1; return;
+        case KEY_END:  editor_move_cursor(e, KEY_RIGHT, e->octets_per_line - e->cursor_x); return;
+        case KEY_CTRL_U:
+        case KEY_PAGEUP:   editor_scroll(e, -(e->screen_rows) + 2); return;
+        case KEY_CTRL_D:
+        case KEY_PAGEDOWN: editor_scroll(e, e->screen_rows - 2); return;
+        }
+    }
 }
 
 void editor_refresh_screen(struct editor* e) {
-	struct charbuf* b = charbuf_create();
-
+    struct charbuf* b = charbuf_create();
     charbuf_append(b, "\x1b[?25l", 6);
     charbuf_append(b, "\x1b[H", 3);
-
-	if (e->mode &
-			(MODE_REPLACE |
-			 MODE_NORMAL |
-			 MODE_APPEND |
-			 MODE_APPEND_ASCII |
-			 MODE_REPLACE_ASCII |
-			 MODE_INSERT |
-			 MODE_INSERT_ASCII)) {
-
-		editor_render_header(e, b);
-		editor_render_contents(e, b);
-		editor_render_status(e, b);
-
-	} else if (e->mode & MODE_COMMAND) {
-
-		charbuf_appendf(b, "\x1b[0m\x1b[?25h\x1b[%d;1H\x1b[2K:", e->screen_rows);
-		charbuf_append(b, e->inputbuffer, e->inputbuffer_index);
-
-	}
-
-	charbuf_draw(b);
-	charbuf_free(b);
+    if (e->mode & MODE_COMMAND) {
+        charbuf_appendf(b, "\x1b[0m\x1b[?25h\x1b[%d;1H\x1b[2K:", e->screen_rows);
+        charbuf_append(b, e->inputbuffer, e->inputbuffer_index);
+    } else {
+        editor_render_header(e, b);
+        editor_render_contents(e, b);
+        editor_render_status(e, b);
+    }
+    charbuf_draw(b);
+    charbuf_free(b);
 }

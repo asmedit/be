@@ -48,6 +48,7 @@ struct editor {
 	bool dirty;
 	char* filename;
 	char* contents;
+    unsigned long offset_dasm;
 	enum editor_view view;
 	unsigned int content_length;
 	enum status_severity status_severity;
