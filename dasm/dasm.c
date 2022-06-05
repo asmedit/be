@@ -89,7 +89,8 @@ void editor_render_dasm(struct editor* e, struct charbuf* b) {
     offset = editor_offset_at_cursor(e);
     p = q = &e->contents[offset];
     p = &e->contents[0] + e->content_length;
-    for (int i=0; i < e->screen_rows - 2; i++) {
+    for (int i=0; i < e->screen_rows - 2; i++) if (offset < e->content_length)
+    {
 
         lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), bits, offset, autosync, &prefer);
         if (!lendis || lendis > (p - q) || ((nextsync || synclen) && (uint32_t)lendis > nextsync - offset))
