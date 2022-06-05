@@ -158,29 +158,29 @@ int editor_statusmessage(struct editor* e, enum status_severity sev, const char*
 }
 
 void editor_render_header(struct editor* e, struct charbuf* b) {
-	char banner[ 1024 + 1];
-	int  banlen = 0;
-	char model[] = "";
+    char banner[ 1024 + 1];
+    int  banlen = 0;
+    char model[] = "";
     int current_offset =  editor_offset_at_cursor(e);
-	unsigned char active_byte = e->contents[current_offset];
-	banlen = snprintf(banner, sizeof(banner),
+    unsigned char active_byte = e->contents[current_offset];
+    banlen = snprintf(banner, sizeof(banner),
 	   "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m % 12s [%02i][% 3s][%02x][%016x] Size: %012iB     ",
 	   "Skylake", e->seg_size, (e->view == VIEW_ASM ? "ASM" : "HEX"), active_byte, current_offset, e->content_length);
-	charbuf_append(b, banner, banlen);
+    charbuf_append(b, banner, banlen);
 
-	unsigned int offset_at_cursor = editor_offset_at_cursor(e);
-	unsigned char val = e->contents[offset_at_cursor];
-	int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
-	charbuf_appendf(b, "\x1b[1;33m\x1b[46m");
-	int width = e->screen_cols - (16+32+64) - 38;
-	char *format = "% 36d%% ";
-	if (e->view == VIEW_HEX) { width = e->screen_cols - (16 + (e->octets_per_line * 4)) - 4; format = "% 36d%% "; }
-	int file_position = snprintf(banner, sizeof(banner), format, percentage);
-	charbuf_append(b, banner, file_position);
-	charbuf_appendf(b, "\x1b[1;36m\x1b[0;36m");
+    unsigned int offset_at_cursor = editor_offset_at_cursor(e);
+    unsigned char val = e->contents[offset_at_cursor];
+    int percentage = (float)(offset_at_cursor + 1) / ((float)e->content_length) * 100;
+    charbuf_appendf(b, "\x1b[1;33m\x1b[46m");
+    int width = e->screen_cols - (16+32+64) - 38;
+    char *format = "% 36d%% ";
+    if (e->view == VIEW_HEX) { width = e->screen_cols - (16 + (24 * 4)) - 4; format = "% 36d%% "; }
+    int file_position = snprintf(banner, sizeof(banner), format, percentage);
+    charbuf_append(b, banner, file_position);
+    charbuf_appendf(b, "\x1b[1;36m\x1b[0;36m");
     for (int i=0; i < width;i++) charbuf_appendf(b, " ");
-	charbuf_appendf(b, "\r\n");
-	charbuf_append(b, "\x1b[0m\x1b[K", 7);
+    charbuf_appendf(b, "\r\n");
+    charbuf_append(b, "\x1b[0m\x1b[K", 7);
 
 }
 
