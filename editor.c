@@ -490,9 +490,9 @@ void editor_process_keypress(struct editor* e) {
 	}
 
 	switch (c) {
-	case KEY_ESC:    editor_setmode(e, MODE_NORMAL); return;
-	case KEY_CTRL_Q: exit(0); return;
-	case KEY_CTRL_S: editor_writefile(e); return;
+            case KEY_ESC:    editor_setmode(e, MODE_NORMAL); return;
+            case KEY_CTRL_Q: exit(0); return;
+            case KEY_CTRL_S: editor_writefile(e); return;
 	}
 
 	if (e->mode & MODE_NORMAL)
@@ -502,6 +502,10 @@ void editor_process_keypress(struct editor* e) {
 		case KEY_DOWN:
 		case KEY_RIGHT:
 		case KEY_LEFT: editor_move_cursor(e, c, 1); break;
+//		case '1': e->seg_size = 8;  return;
+		case '2': e->seg_size = 16; return;
+		case '3': e->seg_size = 32; return;
+		case '4': e->seg_size = 64; return;
 		case 'd': editor_setview(e, VIEW_ASM); return;
 		case 'x': editor_setview(e, VIEW_HEX); return;
 //		case 'a': editor_setmode(e, MODE_APPEND);       return;
