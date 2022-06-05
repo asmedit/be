@@ -40,7 +40,7 @@
 #define DUMPWIN 32
 #define CODEWIN 64
 
-int dump_width = 16;
+int dump_win = DUMPWIN;
 char buffer[INSN_MAX * 2], *p, *ep, *q;
 char outbuf[256];
 uint32_t nextsync, synclen, initskip = 0L;
@@ -54,10 +54,9 @@ char dump[LINES][DUMP];
 char code[LINES][CODE];
 char addr[LINES][ADDR];
 
-void nasm_init() {
+void nasm_init(struct editor* e) {
     nasm_ctype_init();
     iflag_clear_all(&prefer);
-    offset = 0;
     init_sync();
 }
 
@@ -69,10 +68,10 @@ void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, ui
     else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
     charbuf_appendf(b, "%016x\x1b[0m ", offset);
     charbuf_appendf(b, "\x1b[4;94m");
-    while (datalen > 0 && bytes < dump_width * 2) { charbuf_appendf(b, "%02X", *data++); bytes++; datalen--; }
+    while (datalen > 0 && bytes < dump_win) { charbuf_appendf(b, "%02X", *data++); bytes++; datalen--; }
     charbuf_appendf(b, "\x1b[0m ");
     charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
-    for (int i=0; i < 2 * (dump_width - bytes); i++) charbuf_appendf(b, " ");
+    for (int i=0; i < dump_win - 2*bytes; i++) charbuf_appendf(b, " ");
 
     charbuf_appendf(b, "\x1b[0m ");
     if (i + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
@@ -87,11 +86,9 @@ void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, ui
 
 void editor_render_dasm(struct editor* e, struct charbuf* b) {
     bits = e->seg_size;
-    p = q = b->contents;
-    nextsync = next_sync(offset, &synclen);
-    p += e->content_length;
     offset = editor_offset_at_cursor(e);
-
+    p = q = &e->contents[offset];
+    p = &e->contents[0] + e->content_length;
     for (int i=0; i < e->screen_rows - 2; i++) {
 
         lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), bits, offset, autosync, &prefer);

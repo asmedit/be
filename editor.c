@@ -15,6 +15,9 @@
 #include "editor.h"
 #include "terminal.h"
 
+char* contents;
+int content_length = 0;
+
 struct editor* editor_init() {
 	struct editor* e = malloc(sizeof(struct editor));
 	e->octets_per_line = 24;
@@ -65,8 +68,6 @@ void editor_openfile(struct editor* e, const char* filename) {
 		exit(1);
 	}
 
-	char* contents;
-	int content_length = 0;
 
 	if (statbuf.st_size <= 0) {
 		struct charbuf* buf = charbuf_create();

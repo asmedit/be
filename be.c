@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 	term_state_save();
 	atexit(editor_exit);
 	clear_screen();
-    nasm_init();
+        nasm_init(e);
 
 
 	while (true) {
