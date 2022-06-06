@@ -23,8 +23,8 @@ The `be` default used for ASM view is 64-bit mode EM64T 16-byte
 instruction pipeline and for HEX view is 192-bit width byte stream.
 For the sake of smooth experience in 64-bit mode it requires 120 column terminal.
 
-<img width="1250" alt="Screenshot 2022-06-04 at 09 23 11"
-     src="https://user-images.githubusercontent.com/144776/171987389-7cafd20d-cdd7-4f39-9c1e-20c40915cc13.png">
+<img width="796" alt="Screenshot 2022-06-06 at 04 09 28"
+     src="https://user-images.githubusercontent.com/144776/172079654-9380b592-ff6d-4f51-b0b4-9837ddc376ab.png">
 
 <img width="1250" alt="Screenshot 2022-06-04 at 09 23 00"
      src="https://user-images.githubusercontent.com/144776/171987401-a0b57cd3-2c00-4a62-8df6-741f871c5087.png">
