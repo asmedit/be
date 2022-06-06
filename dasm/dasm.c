@@ -33,10 +33,10 @@
 
 int  dump_win = DUMPWIN;
 int  addr[LINES][ADDR];
-char dump[LINES][DUMP*20];
-char code[LINES][CODE];
 int  codelen[LINES];
 int  dumplen[LINES];
+unsigned char dump[LINES][DUMP*20];
+unsigned char code[LINES][CODE];
 
 void nasm_init(struct editor* e) { nasm_ctype_init();  init_sync(); }
 
@@ -64,7 +64,7 @@ void draw_instruction(int i, struct editor* e, struct charbuf* b, uint64_t offse
             memset(hexstr()+1, '\0', 1);
             if (hexstr_idx() == 1 && e->mode == MODE_REPLACE)
                 hexlen = snprintf(hex, sizeof(hex), "%02x", dump[i][j] & 0xF | hex2bin(hexstr()) & 0xF << 4);
-	        charbuf_appendf(b, "%02X", dump[i][j]);
+	        charbuf_appendf(b, "%02X", (unsigned char)dump[i][j]);
             charbuf_appendf(b, "\x1b[4;94m\x1b[49m");
         } else {
             charbuf_appendf(b, "\x1b[4;94m\x1b[49m");
