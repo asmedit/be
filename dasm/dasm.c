@@ -105,8 +105,9 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
     iflag_t prefer;
     iflag_clear_all(&prefer);
 
-    p = q = &e->contents[offset];
+    q = &e->contents[offset];
     p = &e->contents[0] + e->content_length;
+
     for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length)
     {
         lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), e->seg_size, offset, autosync, &prefer);
@@ -161,19 +162,18 @@ void editor_move_cursor_dasm(struct editor* e, int dir, int amount)
     if (e->cursor_y > e->screen_rows - 2) {
         e->cursor_y = e->screen_rows - 2;
     }
-
-/*
-    if (e->cursor_y > e->screen_rows - 2) {
-        e->cursor_y = e->screen_rows - 2;
-        editor_scroll(e, 1);
-    } else if (e->cursor_y < 1 && e->line > 0) {
-        e->cursor_y = 1;
-        editor_scroll(e, -1);
-    }
-*/
 }
 
 void editor_replace_byte_dasm(struct editor* e, char x) {
+    hexstr_set(0,0); hexstr_set(1,0); hexstr_set(2,0);
+    hexstr_idx_set(0);
+    unsigned int offset = offset_at_cursor_dasm(e);
+    unsigned char prev = e->contents[offset];
+    e->contents[offset] = x;
+    editor_refresh_screen(e);
+    editor_move_cursor(e, KEY_RIGHT, 1);
+    editor_statusmessage(e, STATUS_INFO, "Replaced byte at offset %09x with %02x", offset, (unsigned char) x);
+    e->dirty = true;
 }
 
 void editor_insert_byte_dasm(struct editor* e, char x, bool after) {
