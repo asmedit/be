@@ -75,26 +75,29 @@ void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, ui
 
     char hex[ 32 + 1];
     int  hexlen = 0;
+
     if (i + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
     else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
     charbuf_appendf(b, "%016x\x1b[0m ", offset);
+
     for (int j = 0; j < dumplen[i] && j < dump_win; j++) //charbuf_appendf(b, "%02X", dump[i][j]);
-	if (e->cursor_y == i + 1 && e->cursor_x == j + 1)
+        if (e->cursor_y - 1 == i && e->cursor_x - 1 == j)
         {
             charbuf_appendf(b, "\x1b[1;37m\x1b[43m");
             memset(hexstr()+1, '\0', 1);
             if (hexstr_idx() == 1 && e->mode == MODE_REPLACE)
-                hexlen = snprintf(hex, sizeof(hex), "%02x",
-                dump[i][j] & 0xF | hex2bin(hexstr()) & 0xF << 4);
-	    charbuf_appendf(b, "%02X", dump[i][j]);
+                hexlen = snprintf(hex, sizeof(hex), "%02x", dump[i][j] & 0xF | hex2bin(hexstr()) & 0xF << 4);
+	        charbuf_appendf(b, "%02X", dump[i][j]);
+            charbuf_appendf(b, "\x1b[4;94m\x1b[49m");
         } else {
-            charbuf_appendf(b, "\x1b[48m\x1b[4;94m");
-	    charbuf_appendf(b, "%02X", dump[i][j]);
+            charbuf_appendf(b, "\x1b[4;94m\x1b[49m");
+            charbuf_appendf(b, "%02X", dump[i][j]);
         }
 
     charbuf_appendf(b, "\x1b[0m ");
     charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
     for (int j = 0; j < dump_win - 2 * dumplen[i]; j++) charbuf_appendf(b, " ");
+
     charbuf_appendf(b, "\x1b[0m ");
     if (i + 1 == e->cursor_y) charbuf_appendf(b, "\x1b[1;97m\x1b[45m");
     else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
@@ -113,7 +116,8 @@ int offset_at_cursor_dasm(struct editor* e) {
     return offset;
 }
 
-void editor_render_dasm(struct editor* e, struct charbuf* b) {
+void disassemble_screen(struct editor* e, struct charbuf* b)
+{
     bits = e->seg_size;
     offset = e->offset_dasm;
     p = q = &e->contents[offset];
@@ -128,14 +132,19 @@ void editor_render_dasm(struct editor* e, struct charbuf* b) {
         q += lendis;
         offset += lendis;
     }
-
-    for (int i = 0; i < e->screen_rows - 2; i++)
-        output_inst(i, e, b, offset += dumplen[i], (uint8_t *)&dump[i][0], dumplen[i], &code[i][0]);
-
 }
 
-void editor_move_cursor_dasm(struct editor* e, int dir, int amount) {
-    switch (dir) {
+void editor_render_dasm(struct editor* e, struct charbuf* b)
+{
+    disassemble_screen(e, b);
+    for (int i = 0; i < e->screen_rows - 2; i++)
+        output_inst(i, e, b, offset += dumplen[i], (uint8_t *)&dump[i][0], dumplen[i], &code[i][0]);
+}
+
+void editor_move_cursor_dasm(struct editor* e, int dir, int amount)
+{
+    switch (dir)
+    {
         case KEY_UP:    e->cursor_y-=amount; break;
         case KEY_DOWN:  e->cursor_y+=amount; break;
         case KEY_LEFT:  e->cursor_x-=amount; break;
