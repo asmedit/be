@@ -61,6 +61,37 @@ int str2int(const char* s, int min, int max, int def) {
     return x;
 }
 
+// O 0 0 = ESC0
+// [ 0 0 = ESC1
+// [ [ 0 = ESC2
+// [ 0 ~ = ESC3
+// [ 1 ~ = ESC4
+// [ 2 ~ = ESC5
+// [ 3 ~ = ESC6
+// [ 1 ^ = ESC7
+// [ 2 ^ = ESC8
+
+// ESC0:   A = KEY_UP
+//         B = KEY_DOWN
+//         C = KEY_RIGHT
+//         D = KEY_LEFT
+//         P = KEY_F1
+//         Q = KEY_F2
+//         R = KEY_F3
+//         w = KEY_F3
+//         y = KEY_F3
+//         S = KEY_F4
+//         x = KEY_F4
+//         t = KEY_F5
+//         v = KEY_F5
+//         u = KEY_F6
+//         l = KEY_F6
+//         q = KEY_F7
+//         s = KEY_F7
+//         r = KEY_F8
+//         p = KEY_F9
+//         n = KEY_F9
+
 int read_key() {
     char c;
     ssize_t nread;
@@ -83,6 +114,7 @@ int read_key() {
                         case '6': return KEY_PAGEDOWN;
                         case '7': return KEY_HOME;
                         case '8': return KEY_END;
+                        case 'J': return KEY_PAGEDOWN;
                     }
                 }
             }
