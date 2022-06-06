@@ -131,37 +131,26 @@ void editor_render_dasm(struct editor* e, struct charbuf* b)
 
 void editor_move_cursor_dasm(struct editor* e, int dir, int amount)
 {
-    switch (dir)
-    {
-        case KEY_UP:    e->cursor_y-=amount; break;
-        case KEY_DOWN:  e->cursor_y+=amount; break;
-        case KEY_LEFT:  e->cursor_x-=amount; break;
-        case KEY_RIGHT: e->cursor_x+=amount; break;
+    switch (dir) {
+        case KEY_UP:    e->cursor_y-=amount; break; case KEY_DOWN:  e->cursor_y+=amount; break;
+        case KEY_LEFT:  e->cursor_x-=amount; break; case KEY_RIGHT: e->cursor_x+=amount; break;
     }
 
-    if (e->cursor_x <= 1 && e->cursor_y <= 1 && e->line <= 0) {
-        e->cursor_x = 1;
-        e->cursor_y = 1;
-        return;
-    }
-
+    if (e->cursor_y <= 1) e->cursor_y = 1;
+    if (e->cursor_y > e->screen_rows - 2) e->cursor_y = e->screen_rows - 2;
+    if (e->cursor_x <= 1 && e->cursor_y <= 1 && e->line <= 0) { e->cursor_x = e->cursor_y = 1; return; }
     if (e->cursor_x < 1) {
-        if (e->cursor_y >= 1) {
-            e->cursor_y--;
-            e->cursor_x = dumplen[e->cursor_y - 1];
-        }
-    } else if (e->cursor_x > dumplen[e->cursor_y - 1]) {
+        if (dir == KEY_LEFT) e->cursor_y--; else e->cursor_y++;
+        if (e->cursor_y >= 1) e->cursor_x = dumplen[e->cursor_y - 1];
+    } else if (e->cursor_x > dumplen[e->cursor_y - 1] && (dir == KEY_RIGHT || dir == KEY_LEFT)) {
         e->cursor_y++;
         e->cursor_x = 1;
+    } else if (e->cursor_x > dumplen[e->cursor_y - 1] && (dir == KEY_DOWN || dir == KEY_UP)) {
+        e->cursor_x = dumplen[e->cursor_y - 1];
     }
-
-    if (e->cursor_y <= 1 && e->line <= 0) {
-        e->cursor_y = 1;
-    }
-
-    if (e->cursor_y > e->screen_rows - 2) {
-        e->cursor_y = e->screen_rows - 2;
-    }
+    if (e->cursor_y <= 1) e->cursor_y = 1;
+    if (e->cursor_x <= 1) e->cursor_x = 1;
+    if (e->cursor_y > e->screen_rows - 2) e->cursor_y = e->screen_rows - 2;
 }
 
 void editor_replace_byte_dasm(struct editor* e, char x) {

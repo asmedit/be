@@ -21,7 +21,6 @@ int content_length = 0;
 struct editor* editor_init() {
     struct editor* e = malloc(sizeof(struct editor));
     e->octets_per_line = 24;
-    e->grouping = 1;
     e->seg_size = 64;
     e->line = 0;
     e->cursor_x = 1;
@@ -31,11 +30,11 @@ struct editor* editor_init() {
     e->content_length = 0;
     e->dirty = false;
     e->offset_dasm = 0;
-    memset(e->status_message, '\0', sizeof(e->status_message));
     e->mode = MODE_NORMAL;
     e->view = VIEW_HEX;
-    memset(e->inputbuffer, '\0', sizeof(e->inputbuffer));
     e->inputbuffer_index = 0;
+    memset(e->status_message, '\0', sizeof(e->status_message));
+    memset(e->inputbuffer, '\0', sizeof(e->inputbuffer));
     memset(e->searchstr, '\0', sizeof(e->searchstr));
     get_window_size(&(e->screen_rows), &(e->screen_cols));
     return e;
@@ -43,9 +42,9 @@ struct editor* editor_init() {
 
 void editor_newfile(struct editor* e, const char* filename) {
     e->filename = malloc(strlen(filename) + 1);
-    strncpy(e->filename, filename, strlen(filename) + 1);
     e->contents = malloc(0);
     e->content_length = 0;
+    strncpy(e->filename, filename, strlen(filename) + 1);
 }
 
 void editor_openfile(struct editor* e, const char* filename) {
@@ -127,15 +126,21 @@ void editor_writefile(struct editor* e) {
 }
 
 void editor_setview(struct editor* e, enum editor_view view) {
+    if (e->view == view) return;
     e->view = view;
     switch (e->view) {
         case VIEW_ASM:
             e->offset_dasm = editor_offset_at_cursor(e);
+            e->hex_x = e->cursor_x;
+            e->hex_y = e->cursor_y;
             e->cursor_x = 1;
             e->cursor_y = 1;
             editor_statusmessage(e, STATUS_INFO, "View: ASM");
             break;
         case VIEW_HEX:
+            editor_scroll_to_offset(e, e->line * e->octets_per_line);
+            e->cursor_x = e->hex_x;
+            e->cursor_y = e->hex_y;
             editor_statusmessage(e, STATUS_INFO, "View: HEX");
             break;
     }

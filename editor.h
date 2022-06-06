@@ -42,6 +42,8 @@ struct editor {
 	int line;
 	int cursor_x;
 	int cursor_y;
+	int hex_x;
+	int hex_y;
 	int screen_rows;
 	int screen_cols;
 	enum editor_mode mode;
@@ -49,6 +51,7 @@ struct editor {
 	char* filename;
 	char* contents;
     unsigned long offset_dasm;
+    unsigned long offset_hex;
 	enum editor_view view;
 	unsigned int content_length;
 	enum status_severity status_severity;
