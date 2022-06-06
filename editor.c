@@ -308,7 +308,7 @@ void editor_process_command(struct editor* e, const char* cmd) {
         }
 
         if (strcmp(setcmd, "bitness") == 0 || strcmp(setcmd, "b") == 0) {
-            int bitness = clampi(setval, 4, 16);
+            int bitness = clampi(setval, 16, 64);
             clear_screen();
             e->seg_size = bitness;
             editor_statusmessage(e, STATUS_INFO, "Bitness is set to %d", bitness);
