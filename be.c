@@ -22,14 +22,16 @@ static void editor_exit() {
 static void print_help(const char* explanation) {
     fprintf(stderr,
         "%s"\
-        "usage: BE [-hvm] filename\n"\
+        "usage: BE [-vhdbo] filename\n"\
         "\n"
-        "Command options:\n"
-        "    -h     Print usage info and exits\n"
-        "    -v     Get version information\n"
-        "    -m     Mode asm/hex/text\n"
+        "Options:\n"
+        "    -v           Get version information\n"
+        "    -h           Print usage info and exits\n"
+        "    -d           Launch ASM view by default\n"
+        "    -b bit       CPU Bitness\n"
+        "    -o octets    Octets per screen for HEX view\n"
         "\n"
-        "Report bugs to <maxim@synrc.com>\n", explanation);
+        "Report bugs to <namdak@tonpa.guru>\n", explanation);
 }
 
 void print_version() {
@@ -48,30 +50,20 @@ static void resize_term() {
 
 int main(int argc, char* argv[]) {
     char* file = NULL;
-    int octets_per_line = 16;
-    int grouping = 4;
-
-    int ch = 0;
-    while ((ch = getopt(argc, argv, "mvhg:o:")) != -1) {
+    int ch = 0, bitness = 64, opl = 24, view = 0;
+    while ((ch = getopt(argc, argv, "vhdb:o:")) != -1) {
         switch (ch) {
-            case 'v':
-                print_version();
-                return 0;
-            case 'h':
-                print_help("");
-                exit(0);
-                break;
-            case 'm':
-                break;
-            default:
-                print_help("");
-                exit(1);
-                break;
+            case 'v': print_version(); return 0;
+            case 'h': print_help(""); exit(0); break;
+            case 'o': opl = str2int(optarg, 16, 64, 16); break;
+            case 'b': bitness = str2int(optarg, 16, 64, 16); break;
+            case 'd': view = VIEW_ASM; break;
+            default: print_help(""); exit(1); break;
         }
     }
 
     if (optind >= argc) {
-        print_help("error: expected filename\n");
+        print_help("Error: filename is expected.\n");
         exit(1);
     }
 
@@ -89,6 +81,9 @@ int main(int argc, char* argv[]) {
     term_state_save();
     atexit(editor_exit);
     clear_screen();
+    e->octets_per_line = opl;
+    e->seg_size = bitness;
+    editor_setview(e, view ? VIEW_ASM : VIEW_HEX);
     nasm_init(e);
 
     while (true) {

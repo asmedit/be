@@ -22,15 +22,6 @@
 #include "../hex/hex.h"
 #include "dasm.h"
 
-// 120-column Layout: 16-32-64
-
-// 0000000000003F97 B804000002                      mov eax,0x2000004
-// 0000000000003F9C BF010000F2                      mov edi,0xf2000001
-// 0000000000003FA1 3648818424756341278563412F23412 lwpins rax,[fs:eax+ebx+0x12345678],0x12345678
-// 0000000000003FBB F2F0364000000000
-// 0000000000003FBB F2F0364881842475634127856340000 xacquire lock add [ss:rsp+0x12345678],0x12345678
-// 0000000000003FB8 C3                              ret
-
 #define LINES 140
 #define DUMP  16
 #define ADDR  8
@@ -40,39 +31,25 @@
 #define DUMPWIN 32
 #define CODEWIN 64
 
-int dump_win = DUMPWIN;
-char buffer[INSN_MAX * 2], *p, *ep, *q;
-char outbuf[256];
-uint32_t nextsync, synclen, initskip = 0L;
-int32_t lendis, lenins;
-bool autosync = false;
-bool eof = false;
-int bits;
-iflag_t prefer;
-unsigned long offset;
-int addr[LINES][ADDR];
+int  dump_win = DUMPWIN;
+int  addr[LINES][ADDR];
 char dump[LINES][DUMP*20];
-int dumplen[LINES];
 char code[LINES][CODE];
-int codelen[LINES];
+int  codelen[LINES];
+int  dumplen[LINES];
 
-void nasm_init(struct editor* e) { nasm_ctype_init(); iflag_clear_all(&prefer); init_sync(); }
+void nasm_init(struct editor* e) { nasm_ctype_init();  init_sync(); }
 
-void setup_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, uint8_t *data, int datalen, char *insn)
+void setup_instruction(int i, struct editor* e, struct charbuf* b, uint64_t offset, uint8_t *data, int datalen, char *insn)
 {
-    // setup
-
     dumplen[i] = datalen;
     memcpy(&dump[i],data,dumplen[i]);
-    lenins = strlen(insn);
-    codelen[i] = lenins;
-    memcpy(&code[i],insn,lenins+1);
+    codelen[i] = strlen(insn) + 1;
+    memcpy(&code[i],insn,codelen[i]);
 }
 
-void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, uint8_t *data, int datalen, char *insn)
+void draw_instruction(int i, struct editor* e, struct charbuf* b, uint64_t offset, uint8_t *data, int datalen, char *insn)
 {
-    // draw
-
     char hex[ 32 + 1];
     int  hexlen = 0;
 
@@ -80,7 +57,7 @@ void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, ui
     else charbuf_appendf(b, "\x1b[0;93m\x1b[0;104m");
     charbuf_appendf(b, "%016x\x1b[0m ", offset);
 
-    for (int j = 0; j < dumplen[i] && j < dump_win; j++) //charbuf_appendf(b, "%02X", dump[i][j]);
+    for (int j = 0; j < dumplen[i] && j < dump_win; j++)
         if (e->cursor_y - 1 == i && e->cursor_x - 1 == j)
         {
             charbuf_appendf(b, "\x1b[1;37m\x1b[43m");
@@ -108,7 +85,7 @@ void output_inst(int i, struct editor* e, struct charbuf* b, uint64_t offset, ui
 }
 
 int offset_at_cursor_dasm(struct editor* e) {
-    offset = e->offset_dasm;
+    int offset = e->offset_dasm;
     for (int i = 0; i < e->cursor_y - 1; i++) offset += dumplen[i];
     offset += e->cursor_x - 1;
     if (offset <= 0) return 0;
@@ -116,19 +93,26 @@ int offset_at_cursor_dasm(struct editor* e) {
     return offset;
 }
 
+
 void disassemble_screen(struct editor* e, struct charbuf* b)
 {
-    bits = e->seg_size;
-    offset = e->offset_dasm;
+    int offset = e->offset_dasm;
+    char buffer[INSN_MAX * 2], *p, *ep, *q;
+    char outbuf[256];
+    uint32_t nextsync, synclen, initskip = 0L;
+    int32_t lendis, lenins;
+    bool autosync = false;
+    iflag_t prefer;
+    iflag_clear_all(&prefer);
+
     p = q = &e->contents[offset];
     p = &e->contents[0] + e->content_length;
-
     for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length)
     {
-        lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), bits, offset, autosync, &prefer);
+        lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), e->seg_size, offset, autosync, &prefer);
         if (!lendis || lendis > (p - q) || ((nextsync || synclen) && (uint32_t)lendis > nextsync - offset))
-            lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), bits);
-        setup_inst(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
+            lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), e->seg_size);
+        setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
         q += lendis;
         offset += lendis;
     }
@@ -137,8 +121,11 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
 void editor_render_dasm(struct editor* e, struct charbuf* b)
 {
     disassemble_screen(e, b);
-    for (int i = 0; i < e->screen_rows - 2; i++)
-        output_inst(i, e, b, offset += dumplen[i], (uint8_t *)&dump[i][0], dumplen[i], &code[i][0]);
+    int offset = e->offset_dasm;
+    for (int i = 0; i < e->screen_rows - 2; i++) {
+        draw_instruction(i, e, b, offset, (uint8_t *)&dump[i][0], dumplen[i], &code[i][0]);
+        offset += dumplen[i];
+    }
 }
 
 void editor_move_cursor_dasm(struct editor* e, int dir, int amount)
@@ -170,6 +157,11 @@ void editor_move_cursor_dasm(struct editor* e, int dir, int amount)
     if (e->cursor_y <= 1 && e->line <= 0) {
         e->cursor_y = 1;
     }
+
+    if (e->cursor_y > e->screen_rows - 2) {
+        e->cursor_y = e->screen_rows - 2;
+    }
+
 /*
     if (e->cursor_y > e->screen_rows - 2) {
         e->cursor_y = e->screen_rows - 2;

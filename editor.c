@@ -30,6 +30,7 @@ struct editor* editor_init() {
     e->contents = NULL;
     e->content_length = 0;
     e->dirty = false;
+    e->offset_dasm = 0;
     memset(e->status_message, '\0', sizeof(e->status_message));
     e->mode = MODE_NORMAL;
     e->view = VIEW_HEX;
@@ -497,9 +498,9 @@ void editor_process_keypress(struct editor* e) {
         case KEY_RIGHT:
         case KEY_LEFT: editor_move_cursor(e, c, 1); return;
 //      case '1': e->seg_size = 8;  return;
-        case '2': editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 16); return;
-        case '3': editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 32); return;
-        case '4': editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 64); return;
+        case '2': e->cursor_x = 1; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 16); return;
+        case '3': e->cursor_x = 1; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 32); return;
+        case '4': e->cursor_x = 1; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 64); return;
         case 'd': editor_setview(e, VIEW_ASM); return;
         case 'x': editor_setview(e, VIEW_HEX); return;
 //      case 'a': editor_setmode(e, MODE_APPEND);       return;

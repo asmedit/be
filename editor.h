@@ -71,6 +71,7 @@ void editor_free(struct editor* e);
 void editor_openfile(struct editor* e, const char* filename);
 void editor_refresh_screen(struct editor* e);
 void editor_setmode(struct editor *e, enum editor_mode mode);
+void editor_setview(struct editor *e, enum editor_view view);
 int editor_statusmessage(struct editor* e, enum status_severity s, const char* fmt, ...);
 void editor_writefile(struct editor* e);
 
