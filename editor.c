@@ -97,7 +97,7 @@ void editor_openfile(struct editor* e, const char* filename) {
         editor_statusmessage(e, STATUS_WARNING, "\"%s\" (%d bytes) [readonly]", e->filename, e->content_length);
     } else {
 //		editor_statusmessage(e, STATUS_INFO, "\"%s\" (%d bytes)", e->filename, e->content_length);
-//		editor_statusmessage(e, STATUS_INFO, "Terminal: %ix%i. You need enough width (120 columns) for disassembler.", e->screen_cols, e->screen_rows);
+//		editor_statusmessage(e, STATUS_INFO, "Terminal: %ix%i.", e->screen_cols, e->screen_rows);
 //		editor_statusmessage(e, STATUS_INFO, "Views: press [a] for assembly view, [x] for hex view. ");
     }
 
@@ -177,7 +177,8 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
     unsigned char active_byte = e->contents[current_offset];
     banlen = snprintf(banner, sizeof(banner),
 	   "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m % 12s [%02i][% 3s][%02x][%016x] Size: %012iB     ",
-	   "Skylake", e->seg_size, (e->view == VIEW_ASM ? "ASM" : "HEX"), active_byte, current_offset, e->content_length);
+	   "Skylake", e->seg_size, (e->view == VIEW_ASM ? "ASM" : "HEX"), active_byte,
+           current_offset, e->content_length);
     charbuf_append(b, banner, banlen);
 
     unsigned int offset_at_cursor = editor_offset_at_cursor(e);

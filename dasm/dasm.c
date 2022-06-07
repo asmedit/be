@@ -40,7 +40,8 @@ unsigned char code[LINES][CODE];
 
 void nasm_init(struct editor* e) { nasm_ctype_init();  init_sync(); }
 
-void setup_instruction(int i, struct editor* e, struct charbuf* b, uint64_t offset, uint8_t *data, int datalen, char *insn)
+void setup_instruction(int i, struct editor* e, struct charbuf* b,
+    uint64_t offset, uint8_t *data, int datalen, char *insn)
 {
     dumplen[i] = datalen;
     memcpy(&dump[i],data,dumplen[i]);
@@ -48,7 +49,8 @@ void setup_instruction(int i, struct editor* e, struct charbuf* b, uint64_t offs
     memcpy(&code[i],insn,codelen[i]);
 }
 
-void draw_instruction(int i, struct editor* e, struct charbuf* b, uint64_t offset, uint8_t *data, int datalen, char *insn)
+void draw_instruction(int i, struct editor* e, struct charbuf* b,
+    uint64_t offset, uint8_t *data, int datalen, char *insn)
 {
     char hex[ 32 + 1];
     int  hexlen = 0;
