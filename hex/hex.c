@@ -11,48 +11,21 @@
 #include "../editor.h"
 #include "../terminal.h"
 
-
 void editor_move_cursor_hex(struct editor* e, int dir, int amount) {
     switch (dir) {
-        case KEY_UP:    e->cursor_y-=amount; break;
-        case KEY_DOWN:  e->cursor_y+=amount; break;
-        case KEY_LEFT:  e->cursor_x-=amount; break;
-        case KEY_RIGHT: e->cursor_x+=amount; break;
+        case KEY_UP:    e->cursor_y-=amount; break; case KEY_DOWN:  e->cursor_y+=amount; break;
+        case KEY_LEFT:  e->cursor_x-=amount; break; case KEY_RIGHT: e->cursor_x+=amount; break;
     }
 
-    if (e->cursor_x <= 1 && e->cursor_y <= 1 && e->line <= 0) {
-        e->cursor_x = 1;
-        e->cursor_y = 1;
-        return;
-    }
-
-    if (e->cursor_x < 1) {
-        if (e->cursor_y >= 1) {
-            e->cursor_y--;
-            e->cursor_x = e->octets_per_line;
-        }
-    } else if (e->cursor_x > e->octets_per_line) {
-        e->cursor_y++;
-        e->cursor_x = 1;
-    }
-
-    if (e->cursor_y <= 1 && e->line <= 0) {
-        e->cursor_y = 1;
-    }
-
-    if (e->cursor_y > e->screen_rows - 2) {
-        e->cursor_y = e->screen_rows - 2;
-        editor_scroll(e, 1);
-    } else if (e->cursor_y < 1 && e->line > 0) {
-        e->cursor_y = 1;
-        editor_scroll(e, -1);
-    }
+    if (e->cursor_x <= 1 && e->cursor_y <= 1 && e->line <= 0) { e->cursor_x = e->cursor_y = 1; return; }
+    if (e->cursor_x < 1) { if (e->cursor_y >= 1) { e->cursor_y--; e->cursor_x = e->octets_per_line; } }
+    else if (e->cursor_x > e->octets_per_line) { e->cursor_y++; e->cursor_x = 1; }
+    if (e->cursor_y <= 1 && e->line <= 0) e->cursor_y = 1;
+    if (e->cursor_y > e->screen_rows - 2) { e->cursor_y = e->screen_rows - 2; editor_scroll(e, 1); }
+    else if (e->cursor_y < 1 && e->line > 0) { e->cursor_y = 1; editor_scroll(e, -1); }
 
     unsigned int offset = editor_offset_at_cursor(e);
-    if (offset >= e->content_length - 1) {
-        editor_cursor_at_offset(e, offset, &e->cursor_x, &e->cursor_y);
-        return;
-    }
+    if (offset >= e->content_length - 1) { editor_cursor_at_offset(e, offset, &e->cursor_x, &e->cursor_y); return; }
 }
 
 void editor_cursor_at_offset(struct editor* e, int offset, int* x, int* y) {
@@ -67,14 +40,12 @@ int editor_offset_at_cursor(struct editor* e) {
     return offset;
 }
 
-
 void editor_scroll_hex(struct editor* e, int units) {
     e->line += units;
     int upper_limit = e->content_length / e->octets_per_line - (e->screen_rows - 3);
     if (e->line >= upper_limit) e->line = upper_limit;
     if (e->line <= 0) e->line = 0;
 }
-
 
 void editor_render_hex(struct editor* e, struct charbuf* b) {
 
