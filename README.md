@@ -30,5 +30,5 @@ Credits
 -------
 
 * Kevin Pors, <a href="https://github.com/krpors/hx">hx</a>
-* Justin Sherman, <a href="https://https://github.com/jsherman212/armadillo">armadillo</a>
+* Justin Sherman, <a href="https://github.com/jsherman212/armadillo">armadillo</a>
 * NASM Authors, <a href="https://github.com/netwide-assembler/nasm">nasm</a>
