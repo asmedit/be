@@ -174,7 +174,7 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
     char banner[ 1024 + 1];
     int  banlen = 0;
     char model[] = "";
-    char arch[4][8] = { "Unknown\0", "  EMT64\0", "AArch64\0", " RISC-V\0", };
+    char arch[4][8] = { "Unknown\0", "  EM64T\0", "AArch64\0", " RISC-V\0", };
     int current_offset =  editor_offset_at_cursor(e);
     unsigned char active_byte = e->contents[current_offset];
     int arch_select = e->arch < 0 ? 0 : (e->arch > 3 ? 0 : e->arch);
