@@ -129,7 +129,7 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
             case ARCH_ARM: // Armadillo
                lendis = 4; opcode = q;
                ArmadilloDisassemble(*opcode, opcode, &insn);
-               memcpy(outbuf,insn->decoded,strlen(insn->decoded));
+               memcpy(outbuf,insn->decoded,strlen(insn->decoded)+1);
                ArmadilloDone(&insn); break;
             case ARCH_RISCV: // SiFive
                inst_fetch((uint8_t *)q, &rvinst, &lendis);
