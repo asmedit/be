@@ -4,11 +4,11 @@ objects := editor.o buffer.o terminal.o hex/hex.o dasm/dasm.o \
 	x86/iflag.o x86/sync.o x86/disp8.o x86/nctype.o x86/readnum.o  \
 	x86/common.o x86/alloc.o x86/string.o \
 	x86/warnings.o x86/error.o x86/ver.o \
-	arm/BranchExcSys.c arm/DataProcessingImmediate.c arm/LoadsAndStores.c \
-	arm/bits.c arm/strext.c \
-	arm/DataProcessingFloatingPoint.c arm/DataProcessingRegister.c \
-	arm/armadillo.c arm/instruction.c arm/utils.c \
-	riscv/riscv-disas.c
+	arm/BranchExcSys.o arm/DataProcessingImmediate.o arm/LoadsAndStores.o \
+	arm/bits.o arm/strext.o \
+	arm/DataProcessingFloatingPoint.o arm/DataProcessingRegister.o \
+	arm/armadillo.o arm/instruction.o arm/utils.o \
+	riscv/riscv-disas.o
 
 all: be
 be: $(objects) be.o

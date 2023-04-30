@@ -120,5 +120,3 @@ int ArmadilloDone(struct ad_insn **_insn){
 
     return 0;
 }
-
-
