@@ -2065,37 +2065,21 @@ static void append(char *s1, const char *s2, ssize_t n)
     }
 }
 
-#define INST_FMT_2 "%04" PRIx64 "              "
-#define INST_FMT_4 "%08" PRIx64 "          "
-#define INST_FMT_6 "%012" PRIx64 "      "
-#define INST_FMT_8 "%016" PRIx64 "  "
-
 static void decode_inst_format(char *buf, size_t buflen, size_t tab, rv_decode *dec)
 {
     char tmp[64];
     const char *fmt;
 
     size_t len = inst_length(dec->inst);
-    switch (len) {
-    case 2:
-        snprintf(buf, buflen, INST_FMT_2, dec->inst);
-        break;
-    case 4:
-        snprintf(buf, buflen, INST_FMT_4, dec->inst);
-        break;
-    case 6:
-        snprintf(buf, buflen, INST_FMT_6, dec->inst);
-        break;
-    default:
-        snprintf(buf, buflen, INST_FMT_8, dec->inst);
-        break;
-    }
+
+    snprintf(buf, buflen, "%s", "\0");
 
     fmt = opcode_data[dec->op].format;
     while (*fmt) {
         switch (*fmt) {
         case 'O':
             append(buf, opcode_data[dec->op].name, buflen);
+            append(buf, " ", buflen);
             break;
         case '(':
             append(buf, "(", buflen);
@@ -2253,7 +2237,7 @@ size_t inst_length(rv_inst inst)
 
 /* instruction fetch */
 
-void inst_fetch(const uint8_t *data, rv_inst *instp, size_t *length)
+void inst_fetch(uint8_t *data, rv_inst *instp, size_t *length)
 {
     rv_inst inst = ((rv_inst)data[1] << 8) | ((rv_inst)data[0]);
     size_t len = *length = inst_length(inst);
@@ -2272,5 +2256,5 @@ void disasm_inst(char *buf, size_t buflen, rv_isa isa, uint64_t pc, rv_inst inst
     decode_inst_operands(&dec);
     decode_inst_decompress(&dec, isa);
     decode_inst_lift_pseudo(&dec);
-    decode_inst_format(buf, buflen, 32, &dec);
+    decode_inst_format(buf, buflen, 0, &dec);
 }

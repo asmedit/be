@@ -174,11 +174,14 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
     char banner[ 1024 + 1];
     int  banlen = 0;
     char model[] = "";
+    char arch[4][8] = { "Unknown\0", "  EMT64\0", "AArch64\0", " RISC-V\0", };
     int current_offset =  editor_offset_at_cursor(e);
     unsigned char active_byte = e->contents[current_offset];
+    int arch_select = e->arch < 0 ? 0 : (e->arch > 3 ? 0 : e->arch);
     banlen = snprintf(banner, sizeof(banner),
-	   "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m % 12s [%02i][% 3s][%02x][%016x] Size: %012iB     ",
-	   "Skylake", e->seg_size, (e->view == VIEW_ASM ? "ASM" : "HEX"), active_byte,
+           "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m %12s [%03i][%s][%02x][%016x] Size: %012iB    ",
+           arch[arch_select],
+           e->seg_size, (e->view == VIEW_ASM ? "ASM" : "HEX"), active_byte,
            current_offset, e->content_length);
     charbuf_append(b, banner, banlen);
 
@@ -504,10 +507,11 @@ void editor_process_keypress(struct editor* e) {
         case KEY_DOWN:
         case KEY_RIGHT:
         case KEY_LEFT: editor_move_cursor(e, c, 1); return;
-//      case '1': e->seg_size = 8;  return;
+        case '1': e->cursor_x = 1; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 8); return;
         case '2': e->cursor_x = 1; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 16); return;
         case '3': e->cursor_x = 1; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 32); return;
         case '4': e->cursor_x = 1; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 64); return;
+        case '5': e->cursor_x = 1; editor_statusmessage(e, STATUS_INFO, "Bitness: %i", e->seg_size = 128); return;
         case 'd': editor_setview(e, VIEW_ASM); return;
         case 'x': editor_setview(e, VIEW_HEX); return;
 //      case 'a': editor_setmode(e, MODE_APPEND);       return;

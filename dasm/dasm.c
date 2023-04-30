@@ -99,49 +99,49 @@ int offset_at_cursor_dasm(struct editor* e) {
     return offset;
 }
 
+rv_isa bitness(struct editor* e)
+{
+    switch (e->seg_size) {
+        case 32: rv32; break;
+        case 64: rv64; break;
+        case 128: rv128; break;
+        default: rv64; break;
+    }
+}
 
 void disassemble_screen(struct editor* e, struct charbuf* b)
 {
+    struct rv_inst *rvinst = NULL;
     struct ad_insn *insn = NULL;
     int offset = e->offset_dasm;
-    char buffer[INSN_MAX * 2], *p, *ep, *q;
-    char outbuf[256];
+    char buffer[INSN_MAX * 2], *p, *ep, *q, outbuf[2048];
     unsigned int * opcode = NULL;
     uint32_t nextsync, synclen, initskip = 0L;
-    int32_t lendis, lenins;
-    bool autosync = false;
-    iflag_t prefer;
-    iflag_clear_all(&prefer);
-
+    int32_t lendis; bool autosync = false; iflag_t prefer; iflag_clear_all(&prefer);
     q = &e->contents[offset];
     p = &e->contents[0] + e->content_length;
-
-    for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length)
-    {
+    for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length) {
         switch (e->arch) {
-
-            case ARCH_INTEL:
+            case ARCH_INTEL: // Nasm
                lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), e->seg_size, offset, autosync, &prefer);
                if (!lendis || lendis > (p - q) || ((nextsync || synclen) && (uint32_t)lendis > nextsync - offset))
-                   lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), e->seg_size);
-               setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
-               q += lendis;
-               offset += lendis;
-               break;
-
-            case ARCH_ARM:
-               lendis = 4;
-               opcode = q;
-               ArmadilloDisassemble(*opcode, (unsigned int)opcode, &insn);
-               setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, insn->decoded);
-               ArmadilloDone(&insn);
-               q += lendis;
-               offset += lendis;
-               break;
-
+                   lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), e->seg_size); break;
+            case ARCH_ARM: // Armadillo
+               lendis = 4; opcode = q;
+               ArmadilloDisassemble(*opcode, opcode, &insn);
+               memcpy(outbuf,insn->decoded,strlen(insn->decoded));
+               ArmadilloDone(&insn); break;
+            case ARCH_RISCV: // SiFive
+               inst_fetch((uint8_t *)q, &rvinst, &lendis);
+               disasm_inst(outbuf, sizeof(outbuf), bitness(e), q, rvinst); break;
+            default: break;
         }
+        setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
+        q += lendis;
+        offset += lendis;
     }
 }
+
 
 void editor_render_dasm(struct editor* e, struct charbuf* b)
 {

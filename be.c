@@ -1,4 +1,5 @@
-// BE HEX DASM BINARY EDITOR 2022 Groupoid Infinity
+// BE HEX DASM BINARY EDITOR
+// Groupoid Infinity (c) 2022-2023
 
 #include <stdio.h>
 #include <string.h>
@@ -29,6 +30,7 @@ static void print_help(const char* explanation) {
         "    -h           Print usage info and exits\n"
         "    -d           Launch ASM view by default\n"
         "    -b bit       CPU Bitness\n"
+        "    -a arch      Intel (1), ARM (2), RISC-V (3)\n"
         "    -o octets    Octets per screen for HEX view\n"
         "\n"
         "Report bugs to <namdak@tonpa.guru>\n", explanation);
@@ -50,13 +52,14 @@ static void resize_term() {
 
 int main(int argc, char* argv[]) {
     char* file = NULL;
-    int ch = 0, bitness = 64, opl = 24, view = 0;
-    while ((ch = getopt(argc, argv, "vhdb:o:")) != -1) {
+    int ch = 0, bitness = 64, opl = 24, view = 0, arch = ARCH_INTEL;
+    while ((ch = getopt(argc, argv, "vhdb:o:a:")) != -1) {
         switch (ch) {
             case 'v': print_version(); return 0;
             case 'h': print_help(""); exit(0); break;
             case 'o': opl = str2int(optarg, 16, 64, 16); break;
-            case 'b': bitness = str2int(optarg, 16, 64, 16); break;
+            case 'b': bitness = str2int(optarg, 16, 128, 16); break;
+            case 'a': arch = (enum dasm_arch)str2int(optarg, 0, 10, 1); break;
             case 'd': view = VIEW_ASM; break;
             default: print_help(""); exit(1); break;
         }
@@ -83,7 +86,7 @@ int main(int argc, char* argv[]) {
     clear_screen();
     e->octets_per_line = opl;
     e->seg_size = bitness;
-    e->arch = ARCH_ARM;
+    e->arch = arch;
     editor_setview(e, view ? VIEW_ASM : VIEW_HEX);
     nasm_init(e);
 
