@@ -32,6 +32,7 @@ struct editor* editor_init() {
     e->offset_dasm = 0;
     e->mode = MODE_NORMAL;
     e->view = VIEW_HEX;
+    e->arch = ARCH_INTEL;
     e->inputbuffer_index = 0;
     memset(e->status_message, '\0', sizeof(e->status_message));
     memset(e->inputbuffer, '\0', sizeof(e->inputbuffer));

@@ -11,6 +11,12 @@ enum editor_view {
     VIEW_ASM = 2,
 };
 
+enum dasm_arch {
+    ARCH_INTEL = 1,
+    ARCH_ARM = 2,
+    ARCH_RISCV = 3,
+};
+
 enum editor_mode {
 	MODE_APPEND        = 1 << 0,
 	MODE_APPEND_ASCII  = 1 << 1,
@@ -53,6 +59,7 @@ struct editor {
     unsigned long offset_dasm;
     unsigned long offset_hex;
 	enum editor_view view;
+	enum dasm_arch arch;
 	unsigned int content_length;
 	enum status_severity status_severity;
 	char status_message[120];

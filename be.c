@@ -83,6 +83,7 @@ int main(int argc, char* argv[]) {
     clear_screen();
     e->octets_per_line = opl;
     e->seg_size = bitness;
+    e->arch = ARCH_ARM;
     editor_setview(e, view ? VIEW_ASM : VIEW_HEX);
     nasm_init(e);
 

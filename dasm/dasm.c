@@ -15,6 +15,10 @@
 #include "../x86/sync.h"
 #include "../x86/disasm.h"
 
+#include "../arm/armadillo.h"
+
+#include "../riscv/riscv-disas.h"
+
 #include "../buffer.h"
 #include "../editor.h"
 #include "../terminal.h"
@@ -98,9 +102,11 @@ int offset_at_cursor_dasm(struct editor* e) {
 
 void disassemble_screen(struct editor* e, struct charbuf* b)
 {
+    struct ad_insn *insn = NULL;
     int offset = e->offset_dasm;
     char buffer[INSN_MAX * 2], *p, *ep, *q;
     char outbuf[256];
+    unsigned int * opcode = NULL;
     uint32_t nextsync, synclen, initskip = 0L;
     int32_t lendis, lenins;
     bool autosync = false;
@@ -112,12 +118,28 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
 
     for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length)
     {
-        lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), e->seg_size, offset, autosync, &prefer);
-        if (!lendis || lendis > (p - q) || ((nextsync || synclen) && (uint32_t)lendis > nextsync - offset))
-            lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), e->seg_size);
-        setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
-        q += lendis;
-        offset += lendis;
+        switch (e->arch) {
+
+            case ARCH_INTEL:
+               lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), e->seg_size, offset, autosync, &prefer);
+               if (!lendis || lendis > (p - q) || ((nextsync || synclen) && (uint32_t)lendis > nextsync - offset))
+                   lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), e->seg_size);
+               setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
+               q += lendis;
+               offset += lendis;
+               break;
+
+            case ARCH_ARM:
+               lendis = 4;
+               opcode = q;
+               ArmadilloDisassemble(*opcode, (unsigned int)opcode, &insn);
+               setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, insn->decoded);
+               ArmadilloDone(&insn);
+               q += lendis;
+               offset += lendis;
+               break;
+
+        }
     }
 }
 
