@@ -7,7 +7,8 @@ objects := editor.o buffer.o terminal.o hex/hex.o dasm/dasm.o \
 	arm/BranchExcSys.c arm/DataProcessingImmediate.c arm/LoadsAndStores.c \
 	arm/bits.c arm/strext.c \
 	arm/DataProcessingFloatingPoint.c arm/DataProcessingRegister.c \
-	arm/armadillo.c arm/instruction.c arm/utils.c
+	arm/armadillo.c arm/instruction.c arm/utils.c \
+	riscv/riscv-disas.c
 
 all: be
 be: $(objects) be.o
