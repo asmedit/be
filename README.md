@@ -1,7 +1,7 @@
 Binary Editor
 =============
 
-InfoSec Hex Editor with Disassembler.
+InfoSec Hex Editor with Disassemblers.
 
 Features
 --------
@@ -10,6 +10,7 @@ Features
 * zero builder
 * ANSI C99
 * termio
+* Mac, Linux
 
 Architectures
 -------------
