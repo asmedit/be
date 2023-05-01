@@ -102,10 +102,10 @@ int offset_at_cursor_dasm(struct editor* e) {
 rv_isa bitness(struct editor* e)
 {
     switch (e->seg_size) {
-        case 32: rv32; break;
-        case 64: rv64; break;
-        case 128: rv128; break;
-        default: rv64; break;
+        case 32:  return rv32;
+        case 64:  return rv64;
+        case 128: return rv128;
+        default:  return rv64;
     }
 }
 
