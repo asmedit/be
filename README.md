@@ -14,7 +14,7 @@ Features
 Architectures
 -------------
 
-* EM64T: MMX, SSE4.2, SSE5, KNI, AVX, AVX-2, AVX-512, AES, AMX, TSX, MPX, FMA, VNNI, GFNI, SGX, CET, PKU
+* EM64T: SSE5, KNI, AVX-512, AES, AMX, TSX, MPX, FMA, VNNI, GFNI, SGX, CET, PKU
 * AArch64: v8.5
 * RISC-V: RV32, RV64, RV128
 * PowerPC: POWER, Cell/BE
