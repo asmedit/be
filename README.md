@@ -17,9 +17,9 @@ Architectures
 * EM64T: SSE5, KNI, AVX-512, AES, AMX, TSX, MPX, FMA, VNNI, GFNI, SGX, CET, PKU
 * AArch64: v8.5
 * RISC-V: RV32, RV64, RV128
-* PowerPC: POWER, Cell/BE
-* MIPS: R4300
-* SuperH: SH-4
+* PowerPC: POWER, Cell/BE (Sony PlayStation 3)
+* MIPS: R4300 (Nintendo 64)
+* SuperH: SH-4 (Sega Dreamcast)
 
 <img width="796" alt="ASM" src="https://user-images.githubusercontent.com/144776/172079654-9380b592-ff6d-4f51-b0b4-9837ddc376ab.png">
 <img width="796" alt="HEX" src="https://user-images.githubusercontent.com/144776/172079707-34d042b1-c2a8-49ed-88b0-3e21d7569106.png">
