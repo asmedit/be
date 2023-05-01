@@ -32,5 +32,6 @@ Credits
 
 * Kevin Pors, <a href="https://github.com/krpors/hx">hx</a>
 * Justin Sherman, <a href="https://github.com/jsherman212/armadillo">armadillo</a>
+* Frank Wille, <a href="https://github.com/BullyWiiPlaza/vdappc">vdappc</a>
 * Michael Clark, <a href="https://github.com/michaeljclark/riscv-disassembler">riscv-disassembler</a>
 * NASM Authors, <a href="https://github.com/netwide-assembler/nasm">nasm</a>

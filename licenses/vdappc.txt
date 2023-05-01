@@ -1,0 +1,11 @@
+Simple PowerPC file and memory disassembler.
+Copyright (c) 1998-2001  Frank Wille
+
+vdappc is freeware and part of the portable and retargetable ANSI C
+compiler vbcc, copyright (c) 1995-2001 by Volker Barthelmann.
+vdappc may be freely redistributed as long as no modifications are
+made and nothing is charged for it. Non-commercial usage is allowed
+without any restrictions.
+
+EVERY PRODUCT OR PROGRAM DERIVED DIRECTLY FROM MY SOURCE MAY NOT BE
+SOLD COMMERCIALLY WITHOUT PERMISSION FROM THE AUTHOR.
