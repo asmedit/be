@@ -1,9 +1,9 @@
 #ifndef XT_TERMINAL_H
 #define XT_TERMINAL_H
 
-#define XT_RELEASE_CODENAME "Fabrice"
-#define XT_RELEASE_DATE "5.6.2022"
-#define XT_VERSION "0.86.2"
+#define XT_RELEASE_CODENAME "Cutler"
+#define XT_RELEASE_DATE "2.5.2023"
+#define XT_VERSION "1.5.0"
 
 #include <stdbool.h>
 #include <termios.h>

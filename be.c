@@ -23,17 +23,17 @@ static void editor_exit() {
 static void print_help(const char* explanation) {
     fprintf(stderr,
         "%s"\
-        "usage: BE [-vhdbo] filename\n"\
+        "usage: be [-vhdbo] <filename>\n"\
         "\n"
         "Options:\n"
         "    -v           Get version information\n"
         "    -h           Print usage info and exits\n"
         "    -d           Launch ASM view by default\n"
-        "    -b bit       CPU Bitness\n"
-        "    -a arch      Intel (1), ARM (2), RISC-V (3)\n"
+        "    -b bitness   CPU Bitness\n"
+        "    -a arch      1:Intel, 2:ARM, 3:RISC-V, 4:PPC, 5:SH4\n"
         "    -o octets    Octets per screen for HEX view\n"
         "\n"
-        "Report bugs to <namdak@tonpa.guru>\n", explanation);
+        "Report bugs to <be@5ht.co>\n", explanation);
 }
 
 void print_version() {
