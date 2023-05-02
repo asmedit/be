@@ -8,7 +8,7 @@ objects := editor.o buffer.o terminal.o hex/hex.o dasm/dasm.o \
 	arm/bits.o arm/strext.o \
 	arm/DataProcessingFloatingPoint.o arm/DataProcessingRegister.o \
 	arm/armadillo.o arm/instruction.o arm/utils.o \
-	riscv/riscv-disas.o ppc/ppc_disasm.o
+	riscv/riscv-disas.o ppc/ppc_disasm.o m68k/dis68k.o
 
 all: be
 be: $(objects) be.o
