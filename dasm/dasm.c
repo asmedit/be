@@ -17,6 +17,7 @@
 #include "../arm/armadillo.h"
 #include "../riscv/riscv-disas.h"
 #include "../ppc/ppc_disasm.h"
+#include "../sh4/sh4dis.h"
 
 #include "../buffer.h"
 #include "../editor.h"
@@ -106,6 +107,16 @@ rv_isa bitness(struct editor* e)
     }
 }
 
+#define SH4ASM_TXT_LEN 228
+static char sh4asm_disas[SH4ASM_TXT_LEN];
+unsigned sh4asm_disas_len;
+static void clear_asm(void) { sh4asm_disas_len = 0; }
+static void neo_asm_emit(char ch) {
+    if (sh4asm_disas_len >= SH4ASM_TXT_LEN)
+        errx(1, "sh4asm disassembler buffer overflow");
+    sh4asm_disas[sh4asm_disas_len++] = ch;
+}
+
 void disassemble_screen(struct editor* e, struct charbuf* b)
 {
     struct DisasmPara_PPC dp;
@@ -145,6 +156,14 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
                memcpy(outbuf+strlen(ppc_opcode)+1,ppc_operands,strlen(ppc_operands));
                memcpy(outbuf+strlen(ppc_opcode)+1+strlen(ppc_operands),"\0",1);
                lendis = sizeof(ppc_word);
+               break;
+            case ARCH_SH4: // SuperH-4
+               uint16_t inst_bin = (uint16_t)*q;
+               clear_asm();
+               sh4asm_disas_inst(inst_bin, neo_asm_emit, 0);
+               memcpy(outbuf,sh4asm_disas,sh4asm_disas_len);
+               memcpy(outbuf+sh4asm_disas_len+1,"\0",1);
+               lendis = 2;
                break;
             default: break;
         }
