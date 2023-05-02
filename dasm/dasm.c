@@ -14,15 +14,13 @@
 #include "../x86/ver.h"
 #include "../x86/sync.h"
 #include "../x86/disasm.h"
-
 #include "../arm/armadillo.h"
-
 #include "../riscv/riscv-disas.h"
+#include "../ppc/ppc_disasm.h"
 
 #include "../buffer.h"
 #include "../editor.h"
 #include "../terminal.h"
-
 #include "../hex/hex.h"
 #include "dasm.h"
 
@@ -30,7 +28,6 @@
 #define DUMP  16
 #define ADDR  8
 #define CODE  64
-
 #define ADDRWIN 16
 #define DUMPWIN 32
 #define CODEWIN 64
@@ -70,7 +67,7 @@ void draw_instruction(int i, struct editor* e, struct charbuf* b,
             memset(hexstr()+1, '\0', 1);
             if (hexstr_idx() == 1 && e->mode == MODE_REPLACE)
                 hexlen = snprintf(hex, sizeof(hex), "%02x", dump[i][j] & 0xF | hex2bin(hexstr()) & 0xF << 4);
-	        charbuf_appendf(b, "%02X", (unsigned char)dump[i][j]);
+                charbuf_appendf(b, "%02X", (unsigned char)dump[i][j]);
             charbuf_appendf(b, "\x1b[4;94m\x1b[49m");
         } else {
             charbuf_appendf(b, "\x1b[4;94m\x1b[49m");
@@ -111,6 +108,9 @@ rv_isa bitness(struct editor* e)
 
 void disassemble_screen(struct editor* e, struct charbuf* b)
 {
+    struct DisasmPara_PPC dp;
+    char ppc_opcode[640];
+    char ppc_operands[2560];
     struct rv_inst *rvinst = NULL;
     struct ad_insn *insn = NULL;
     int offset = e->offset_dasm;
@@ -134,6 +134,18 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
             case ARCH_RISCV: // SiFive
                inst_fetch((uint8_t *)q, &rvinst, &lendis);
                disasm_inst(outbuf, sizeof(outbuf), bitness(e), q, rvinst); break;
+            case ARCH_PPC: // PowerPC
+               dp.opcode = ppc_opcode;
+               dp.operands = ppc_operands;
+               dp.iaddr = (unsigned int *)q;
+               dp.instr = (unsigned int *)q;
+               PPC_Disassemble(&dp);
+               memcpy(outbuf,ppc_opcode,strlen(ppc_opcode));
+               memcpy(outbuf+strlen(ppc_opcode)," ",1);
+               memcpy(outbuf+strlen(ppc_opcode)+1,ppc_operands,strlen(ppc_operands));
+               memcpy(outbuf+strlen(ppc_opcode)+1+strlen(ppc_operands),"\0",1);
+               lendis = sizeof(ppc_word);
+               break;
             default: break;
         }
         setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
