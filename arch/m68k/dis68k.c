@@ -2,11 +2,9 @@
 	Submitted to public domain 10/08/93 (V1.2)
 	Current version 1.22, adds "raw" disasm output, ie ready to re-assemble
 
-	1999-11-04:	Add 68030 instructions,
-				Add labels.
+	1999-11-04:	Add 68030 instructions, add labels.
 	2019-03-10:	Remove conio dependency, fix modern C build errors.
 	onward: 	see Git history. */
-
 
 #include <stdio.h>
 #include <stdlib.h>
