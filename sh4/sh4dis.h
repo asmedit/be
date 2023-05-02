@@ -71,18 +71,16 @@ sh4asm_disas_inst(uint16_t inst, sh4asm_disas_emit_func em, uint32_t pc);
 #define SH4ASM_BIT_RANGE(first, last)                           \
     (SH4ASM_SET_TO_BIT(last + 1) & ~SH4ASM_SET_TO_BIT(first))
 
+#define NON_INST_BUF_LEN 64
+char sh4_buf[NON_INST_BUF_LEN];
+
 SH4ASM_STATIC void
 sh4asm_opcode_non_inst_(unsigned const *quads, sh4asm_disas_emit_func em) {
-#define NON_INST_BUF_LEN 64
-    char buf[NON_INST_BUF_LEN];
-    memset(buf, 0, sizeof(buf));
+    memset(sh4_buf, 0, sizeof(sh4_buf));
     // TODO: make sure the quads get printed in the right order
-    snprintf(buf, NON_INST_BUF_LEN, ".byte %x%x .byte %x%x ",
-             quads[0], quads[1], quads[2], quads[3]);
-    buf[NON_INST_BUF_LEN - 1] = '\0';
-    char const *outp = buf;
-    while (*outp)
-        em(*outp++);
+    snprintf(sh4_buf, NON_INST_BUF_LEN, ".byte %x%x %x%x\0", quads[1], quads[0], quads[3], quads[2]);
+    char const *outp = sh4_buf;
+    while (*outp) em(*outp++);
 }
 
 SH4ASM_STATIC void

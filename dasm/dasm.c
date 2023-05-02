@@ -159,10 +159,11 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
                break;
             case ARCH_SH4: // SuperH-4
                uint16_t inst_bin = (uint16_t)*q;
+               memset(sh4_buf, 0, sizeof(sh4_buf));
                clear_asm();
                sh4asm_disas_inst(inst_bin, neo_asm_emit, 0);
                memcpy(outbuf,sh4asm_disas,sh4asm_disas_len);
-               memcpy(outbuf+sh4asm_disas_len+1,"\0",1);
+               memcpy(outbuf+sh4asm_disas_len,"\0",1);
                lendis = 2;
                break;
             default: break;
