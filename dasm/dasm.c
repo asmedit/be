@@ -19,11 +19,11 @@
 #include "../arch/ppc/ppc_disasm.h"
 #include "../arch/sh4/sh4dis.h"
 
-#include "../buffer.h"
-#include "../editor.h"
-#include "../terminal.h"
+#include "../term/buffer.h"
+#include "../term/terminal.h"
 #include "../hex/hex.h"
 #include "dasm.h"
+#include "../editor.h"
 
 #define LINES 140
 #define DUMP  16
@@ -164,6 +164,9 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
                sh4asm_disas_inst(inst_bin, neo_asm_emit, 0);
                memcpy(outbuf,sh4asm_disas,sh4asm_disas_len);
                memcpy(outbuf+sh4asm_disas_len,"\0",1);
+               lendis = 2;
+               break;
+            case ARCH_M68K: // M68K
                lendis = 2;
                break;
             default: break;

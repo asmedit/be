@@ -1,3 +1,7 @@
+// BE: INFOSEC BINARY HEX EDITOR WITH DASM
+// Synrc Research (c) 2022-2023
+// 5HT DHARMA License
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -12,8 +16,8 @@
 
 #include "dasm/dasm.h"
 #include "hex/hex.h"
+#include "term/terminal.h"
 #include "editor.h"
-#include "terminal.h"
 
 char* contents;
 int content_length = 0;
@@ -174,10 +178,10 @@ void editor_render_header(struct editor* e, struct charbuf* b) {
     char banner[ 1024 + 1];
     int  banlen = 0;
     char model[] = "";
-    char arch[6][8] = { "Unknown\0", "  EM64T\0", "AArch64\0", " RISC-V\0", "PowerPC\0", " SuperH\0" };
+    char arch[7][8] = { "Unknown\0", "  EM64T\0", "AArch64\0", " RISC-V\0", "PowerPC\0", " SuperH\0", " M68000\0" };
     int current_offset =  editor_offset_at_cursor(e);
     unsigned char active_byte = e->contents[current_offset];
-    int arch_select = e->arch < 0 ? 0 : (e->arch > 5 ? 0 : e->arch);
+    int arch_select = e->arch < 0 ? 0 : (e->arch > 6 ? 0 : e->arch);
     banlen = snprintf(banner, sizeof(banner),
            "\x1b[1;33m\x1b[44m▄ BE \x1b[1;33m\x1b[45m %12s [%03i][%s][%02x][%016x] Size: %012iB    ",
            arch[arch_select],
@@ -207,10 +211,10 @@ void editor_render_help(struct editor* e) {
     struct charbuf* b = charbuf_create();
     clear_screen();
     charbuf_append(b, "\x1b[?25l", 6); // hide cursor
-    charbuf_appendf(b, "This is BE hacker editor, version %s\r\n\n", XT_VERSION);
+    charbuf_appendf(b, "BE: InfoSec Hex Editor with Disassemblers, version %s\r\n\n", XT_VERSION);
 
     charbuf_appendf(b,
-	"Available commands:\r\n"
+        "Available commands:\r\n"
         "\r\n"
         "CTRL+Q  : Quit immediately without saving.\r\n"
         "CTRL+S  : Save (in place).\r\n"

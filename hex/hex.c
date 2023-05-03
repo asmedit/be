@@ -7,9 +7,9 @@
 
 #include "hex.h"
 
-#include "../buffer.h"
+#include "../term/buffer.h"
 #include "../editor.h"
-#include "../terminal.h"
+#include "../term/terminal.h"
 
 void editor_move_cursor_hex(struct editor* e, int dir, int amount) {
     switch (dir) {

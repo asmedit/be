@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <stdbool.h>
-#include "buffer.h"
+#include "term/buffer.h"
 
 enum editor_view {
     VIEW_HEX = 1,

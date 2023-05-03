@@ -1,5 +1,6 @@
-// BE HEX DASM BINARY EDITOR
-// Groupoid Infinity (c) 2022-2023
+// BE: INFOSEC BINARY HEX EDITOR WITH DASM
+// Synrc Research (c) 2022-2023
+// 5HT DHARMA License
 
 #include <stdio.h>
 #include <string.h>
@@ -7,7 +8,7 @@
 #include <signal.h>
 
 #include "editor.h"
-#include "terminal.h"
+#include "term/terminal.h"
 #include "dasm/dasm.h"
 
 static struct editor* e;
@@ -23,14 +24,14 @@ static void editor_exit() {
 static void print_help(const char* explanation) {
     fprintf(stderr,
         "%s"\
-        "usage: be [-vhdbo] <filename>\n"\
+        "Usage: be [-vhdbao] <filename>\n"\
         "\n"
         "Options:\n"
         "    -v           Get version information\n"
         "    -h           Print usage info and exits\n"
         "    -d           Launch ASM view by default\n"
         "    -b bitness   CPU Bitness\n"
-        "    -a arch      1:Intel, 2:ARM, 3:RISC-V, 4:PPC, 5:SH4\n"
+        "    -a arch      1:x86, 2:ARM, 3:RV, 4:PPC, 5:SH4, 6:M68K\n"
         "    -o octets    Octets per screen for HEX view\n"
         "\n"
         "Report bugs to <be@5ht.co>\n", explanation);
