@@ -53,7 +53,7 @@ const struct OpcodeDetails optab[88] = {
 	{0xFFF0,0x4E40}, {0xFFFF,0x4E76}, {0xFF00,0x4A00}, {0xFFF8,0x4E58}
 };
 
-uint32_t address, romstart;
+unsigned long int address, romstart;
 bool rawmode = false;
 
 struct MapEntry {
@@ -80,83 +80,6 @@ const char scc_tab[][4] = {
 };
 const char size_arr[3] = {'B','W','L'};
 
-/*!
-	Reads from @c filename and populates the global variable @c map.
-	If @c filename is @c NULL, populates @c map with the empty map.
-
-	@returns @c false if a filename is specified but could not be opened
-		or else could not properly be parsed. @c true otherwise.
-*/
-bool readmap(const char *filename) {
-	FILE *fmap;
-
-	// Create a sixteen-item map, to be getting on with.
-	size_t allocated_map_size = 16;
-	map = (struct MapEntry *)malloc(sizeof(struct MapEntry) * allocated_map_size);
-
-	if (!filename || !(fmap = fopen(filename, "rt"))) {
-		if (filename) {
-			fprintf(stderr, "Couldn't open %s as a map file\n", filename);
-			return false;
-		}
-
-		romstart = 0;
-		map[0].start = 0L;
-		map[0].end = 0xffffffff;
-		map[0].type = Code;
-		map[1].type = End;
-	} else {
-		if (!fscanf(fmap,"romstart = %X", &romstart)) {
-			fprintf(stderr, "Error in romstart = line!\n");
-			return false;
-		}
-
-		size_t index = 0;
-
-		while (true) {
-			uint32_t start, end;
-			char type[10];
-
-			const int items_read = fscanf(fmap, "%x,%x,%9s", &start, &end, type);
-			if (items_read == 3) {
-				if (index+1 >= allocated_map_size) {
-					// Default to 16 entries when first creating a map, double each time the existing
-					// estimate isn't enough for both this entry and the terminator yet to come.
-					const size_t new_map_size = allocated_map_size ? (allocated_map_size * 2) : 16;
-					map = realloc(map, sizeof(struct MapEntry) * new_map_size);
-					allocated_map_size = new_map_size;
-					if (!map) {
-						fprintf(stderr, "Couldn't allocate enough space for map\n");
-						return false;
-					}
-				}
-
-				map[index].start = start;
-				map[index].end = end;
-				map[index].type = End;
-				if(strcmp(type,"data")==0) map[index].type = Data;
-				if(strcmp(type,"code")==0) map[index].type = Code;
-
-				if (map[index].type == End) {
-					fprintf(stderr, "Couldn't parse type in map file at line %lu ('code' or 'data' misspelt)\n", index+2);
-					return false;
-				}
-				++ index;
-			} else {
-				if(items_read > 0) {
-					fprintf(stderr, "Syntax error on line %lu (%d)\n", index+2, items_read);
-					return false;
-				}
-				break;	// i.e. feof.
-			}
-		}
-
-		map[index].type = End;
-		fclose(fmap);
-	}
-
-	return true;
-}
 
 /*!
 	Gets and echoes the next byte from stdin and increments the global @c address;
@@ -164,13 +87,8 @@ bool readmap(const char *filename) {
 	code EXIT_FAILURE.
 */
 unsigned int getbyte() {
-	const int byte = fgetc(stdin);
-	if (feof(stdin)) {
-		fprintf(stderr, "Unexpected end of input\n");
-		exit(EXIT_FAILURE);
-	}
+	uint8_t byte = *((uint8_t *)address);
 	++ address;
-	printf("%02x ", byte);
 	return byte;
 }
 
@@ -179,20 +97,10 @@ unsigned int getbyte() {
 	if stdin is exhausted, prints an error and causes the program to exit with
 	code EXIT_FAILURE.
 */
-int getword() {
-	int word = fgetc(stdin) << 8;
-	word |= fgetc(stdin);
-
-	if (feof(stdin)) {
-		fprintf(stderr, "Unexpected end of input\n");
-		exit(EXIT_FAILURE);
-	}
-
-	address += 2;
-	if (!rawmode) {
-		printf("%04x ", word);
-	}
-	return word;
+uint16_t getword() {
+        uint16_t word = (uint16_t)*(int *)address;
+        address += 2;
+        return word;
 }
 
 /*!
@@ -296,30 +204,19 @@ int getmode(int instruction) {
 	return mode;
 }
 
-void disasm68k(unsigned long int start, unsigned long int end) {
+void disasm68k(unsigned long int start, unsigned long int end, char *outbuf, int *outlen) {
 	address = start;
-	if (address < romstart) {
-		printf("Address < RomStart in disasm()!\n");
-		exit(1);
-	}
-
 	char operand_s[100];
 
-	while (!feof(stdin) && (address < end)) {
-		if (!rawmode) {
-			printf("%08x : ", address);
-		} else {
-			printf("        ");
-		}
+	while ((address < end)) {
 		const uint32_t start_address = address;
-		const int word = getword();
+		const uint16_t word = getword();
+
 		bool decoded = false;
 
 		char opcode_s[50], operand_s[100];
 		for (int opnum = 1; opnum <= 87; ++opnum) {
 			if ((word & optab[opnum].and) == optab[opnum].xor) {
-				/* Diagnostic code */
-				diagnostic_printf("(%i) ",opnum);
 
 				switch(opnum) { /* opnum = 1..85 */
 					case 1  :
@@ -348,9 +245,6 @@ void disasm68k(unsigned long int start, unsigned long int end) {
 						const int dmode = getmode(word);
 						const int dreg = word & 0x0007;
 						const int size = (word & 0x00C0) >> 6;
-
-						/* Diagnostic code */
-						diagnostic_printf("dmode = %i, dreg = %i, size = %i",dmode,dreg,size);
 
 						if (size == 3) break;
 						/*
@@ -1179,14 +1073,15 @@ void disasm68k(unsigned long int start, unsigned long int end) {
 		}
 
 		const int fetched = address - start_address;
-		if (!rawmode) {
-			for (int i = 0 ; i < (5 - fetched); ++i) printf("     ");
-		}
-		if (decoded != 0) {
-			printf("%-8s %s\n", opcode_s, operand_s);
-		} else {
-			printf("???\n");
-		}
+
+                memcpy(outbuf,opcode_s,strlen(opcode_s));
+                memcpy(outbuf+strlen(opcode_s)," ",1);
+                memcpy(outbuf+strlen(opcode_s)+1,operand_s,strlen(operand_s));
+                memcpy(outbuf+strlen(opcode_s)+1+strlen(operand_s),"\0",1);
+                *outlen = fetched;
+
+                return;
+
 	}
 }
 
@@ -1231,68 +1126,3 @@ void datadump(uint32_t start, uint32_t end) {
 	}
 }
 
-/*
-int main(int argc, char *argv[]) {
-	char *mapfilename = NULL;
-	int argument = 1;
-	while(argument < argc) {
-		// Output plain help?
-		if(!strcmp(argv[argument], "-h") || !strcmp(argv[argument], "--help")) {
-			printf("Usage: %s [-m mapfile] [-r]\n", argv[0]);
-			printf("Reads a binary file from stdin; prints disassembly to stdout.\n");
-			printf("If a mapfile is specified, it can be used to demark code and data segments.\n");
-			printf("-r disables output of addresses when disassembling.\n");
-			printf("Or use -v for version history.\n\n");
-			printf("Map files should have as their first line:\n");
-			printf("romstart = x\n");
-			printf("... indicating a starting address in hexadecimal. From there put lines of the form:\n");
-			printf("<start>,<end>,[code/data]\n");
-			printf("... to demark sections of code or data. The start and end addresses should be in hexadecimal.\n");
-			return EXIT_SUCCESS;
-		}
-
-		// Output version history?
-		if(!strcmp(argv[argument], "-v")) {
-			printf("Revision list : 1.0  13/02/91\n");
-			printf("                1.1  05/03/91 : Reglist upgraded.\n");
-			printf("                                .MAP file added.\n");
-			printf("                                .MSK file removed.\n");
-			printf("                1.11 24/04/91 : MOVEA bug fixed.\n");
-			printf("                1.12 24/12/92 : SUB bug fixed.\n");
-			printf("                                EXG/AND.W book bug fixed.\n");
-			printf("                1.2  10/08/93 : Submitted to public domain.\n");
-			printf("                1.21 07/07/94 : Added 'raw' output mode.\n");
-			printf("                2019 onwards  : See Git commit history.\n");
-			return EXIT_SUCCESS;
-		}
-
-		if(!strcmp(argv[argument], "-r")) {
-			rawmode = true;
-			++ argument;
-			continue;
-		}
-
-		if(!strcmp(argv[argument], "-m") && argument+1 != argc) {
-			mapfilename = argv[argument+1];
-			argument += 2;
-			continue;
-		}
-
-		fprintf(stderr, "Unrecognised option: %s", argv[argument]);
-		return EXIT_FAILURE;
-	}
-
-	if (!readmap(mapfilename)) {
-		return EXIT_FAILURE;
-	}
-
-	size_t index = 0;
-	while (map[index].type != End) {
-		printf(index ? "\n" : "");
-		if (map[index].type == Data) datadump(map[index].start, map[index].end);
-		if (map[index].type == Code) disasm(map[index].start, map[index].end);
-		++ index;
-	}
-	return 0;
-}
-*/

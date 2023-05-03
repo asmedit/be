@@ -167,7 +167,7 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
                lendis = 2;
                break;
             case ARCH_M68K: // M68K
-               lendis = 2;
+               disasm68k((unsigned long int)q,(unsigned long int)q+10,outbuf,&lendis);
                break;
             default: break;
         }
