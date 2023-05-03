@@ -13,16 +13,6 @@
 #include <ctype.h>
 #include <string.h>
 
-
-// Enable the #define below to print diagnostics.
-//#define PRINT_DIAGNOSTICS
-
-#ifdef PRINT_DIAGNOSTICS
-#define diagnostic_printf printf
-#else
-#define diagnostic_printf(...) while(false);
-#endif
-
 struct OpcodeDetails {
 	uint16_t and;
 	uint16_t xor;
@@ -1082,47 +1072,6 @@ void disasm68k(unsigned long int start, unsigned long int end, char *outbuf, int
 
                 return;
 
-	}
-}
-
-/*!
-	Consumes end - start input bytes and outputs them as a data segment;
-	at exit the global @c address is equal to @c end.
-
-	Any bytes that are within the printable character range are output as
-	those characters; full stops fill in for unprintable characters.
-*/
-void datadump(uint32_t start, uint32_t end) {
-	address = start;
-	if (address < romstart) {
-		fprintf(stderr, "Address < RomStart in datadump()!\n");
-		exit(EXIT_FAILURE);
-	}
-
-	while (!feof(stdin) && (address < end)) {
-		printf("%08x : ", address);
-
-		const uint32_t reamaining_bytes = end - address;
-		const int  bytes_to_print = (reamaining_bytes > 16) ? 16 : reamaining_bytes;
-
-		int toprint[16] ;
-		for (int i = 0; i < 16; ++i) {
-			if (i >= bytes_to_print)
-				printf("   ");
-			else
-				toprint[i] = getbyte();
-		}
-		printf("  ");
-		for (int i = 0; i < 16; ++i) {
-			const int byte = toprint[i];
-			if (i >= bytes_to_print)
-				printf(" ");
-			else if (isprint(byte))
-				printf("%c", byte);
-			else
-				printf(".");
-		}
-		fputc('\n', stdout);
 	}
 }
 
