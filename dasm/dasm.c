@@ -169,6 +169,11 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
             case ARCH_M68K: // M68K
                disasm68k((unsigned long int)q,(unsigned long int)q+10,outbuf,&lendis);
                break;
+            case ARCH_MIPS: // M68K
+               uint32_t inst = (uint32_t)*((unsigned long int *)q);
+               decodeMIPS(inst,(unsigned long int)q,outbuf);
+               lendis = 4;
+               break;
             default: break;
         }
         setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
