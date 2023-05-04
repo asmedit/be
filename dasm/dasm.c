@@ -1,3 +1,7 @@
+// BE: INFOSEC BINARY HEX EDITOR WITH DASM
+// Synrc Research (c) 2022-2023
+// 5HT DHARMA License
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -5,25 +9,20 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "../arch/x86/compiler.h"
-#include "../arch/x86/nctype.h"
-#include "../arch/x86/insns.h"
-#include "../arch/x86/nasm.h"
-#include "../arch/x86/nasmlib.h"
-#include "../arch/x86/error.h"
-#include "../arch/x86/ver.h"
-#include "../arch/x86/sync.h"
+#include "../term/buffer.h"
+#include "../term/terminal.h"
+#include "../hex/hex.h"
+#include "../dasm/dasm.h"
+#include "../editor.h"
+
 #include "../arch/x86/disasm.h"
 #include "../arch/arm/armadillo.h"
 #include "../arch/riscv/riscv-disas.h"
 #include "../arch/ppc/ppc_disasm.h"
+#include "../arch/mips/mips.h"
+#include "../arch/m68k/m68k.h"
 #include "../arch/sh4/sh4dis.h"
-
-#include "../term/buffer.h"
-#include "../term/terminal.h"
-#include "../hex/hex.h"
-#include "dasm.h"
-#include "../editor.h"
+#include "../arch/pdp11/pdp11.h"
 
 #define LINES 140
 #define DUMP  16
@@ -112,11 +111,11 @@ static char sh4asm_disas[SH4ASM_TXT_LEN];
 unsigned sh4asm_disas_len;
 static void clear_asm(void) { sh4asm_disas_len = 0; }
 static void neo_asm_emit(char ch) {
+    struct editor *e = editor();
     if (sh4asm_disas_len >= SH4ASM_TXT_LEN)
-        errx(1, "sh4asm disassembler buffer overflow");
+        editor_statusmessage(e, STATUS_INFO, "SuperH dissassembler overflow.");
     sh4asm_disas[sh4asm_disas_len++] = ch;
 }
-
 
 uint32_t le_to_be(uint32_t num) {
     uint8_t b[4] = {0};
@@ -138,6 +137,8 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
     char ppc_operands[2560];
     struct rv_inst *rvinst = NULL;
     struct ad_insn *insn = NULL;
+    uint32_t inst = 0;
+    uint32_t inst16 = 0;
     int offset = e->offset_dasm;
     char buffer[INSN_MAX * 2], *p, *ep, *q, outbuf[2048];
     unsigned int * opcode = NULL;
@@ -172,10 +173,10 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
                lendis = sizeof(ppc_word);
                break;
             case ARCH_SH4: // SuperH-4
-               uint16_t inst_bin = (uint16_t)*q;
+               inst16 = (uint16_t)*q;
                memset(sh4_buf, 0, sizeof(sh4_buf));
                clear_asm();
-               sh4asm_disas_inst(inst_bin, neo_asm_emit, 0);
+               sh4asm_disas_inst(inst16, neo_asm_emit, 0);
                memcpy(outbuf,sh4asm_disas,sh4asm_disas_len);
                memcpy(outbuf+sh4asm_disas_len,"\0",1);
                lendis = 2;
@@ -184,11 +185,12 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
                disasm68k((unsigned long int)q,(unsigned long int)q+10,outbuf,&lendis);
                break;
             case ARCH_MIPS: // MIPS
-               uint32_t inst = (uint32_t)*((unsigned long int *)q);
-               decodeMIPS(le_to_be(inst),(unsigned long int)q,outbuf);
-               lendis = 4;
+               inst = (uint32_t)*((unsigned long int *)q);
+               decodeMIPS(le_to_be(inst),(unsigned long int)q,outbuf,&lendis);
                break;
             case ARCH_PDP11: // PDP-11
+               inst = (uint32_t)*((unsigned long int *)q);
+               decodePDP11(inst,(unsigned long int)q,outbuf,&lendis);
                break;
             default: break;
         }

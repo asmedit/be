@@ -123,24 +123,24 @@ char *decodeVectorElementScalar(enum VEC opcode, uint32_t operation)
 char *decodeVector(uint32_t operation)
 {
     enum VEC opcode = (enum VEC)(operation & 0x3F);
-    switch(opcode) {
+    sprintf(unknown, "vop.%x", opcode);
+    switch (opcode) {
         case VRCP:
         case VRCPL:
         case VRCPH:
         case VMOV:
         case VRSQ:
         case VRSQL:
-        case VRSQH:
-            sprintf(str_vecop, "%s", decodeVectorElementScalar(opcode, operation));
-        case VNOP:
-            sprintf(str_vecop, "%s", "nop");
+        case VRSQH: sprintf(str_vecop, "%s", decodeVectorElementScalar(opcode, operation)); break;
+        case VNOP:  sprintf(str_vecop, "%s", "nop"); break;
+        default: break;
     }
 
     uint8_t e  = (uint8_t)((operation >> 21) & 0xF);
     uint8_t vt = (uint8_t)((operation >> 16) & 0x1F);
     uint8_t vs = (uint8_t)((operation >> 11) & 0x1F);
     uint8_t vd = (uint8_t)((operation >> 6) & 0x1F);
-    sprintf(unknown, "vop.%x", opcode);
+
     sprintf(str_vecop, "%s $v%i, $v%i, $v%s", (rsp_vec[opcode] == 0 ? unknown : rsp_vec[opcode]),
        vd, vs, decodeVectorElement(vt, e));
     return str_vecop;
@@ -267,9 +267,11 @@ char *decodeSpecialShift(char *opcode, uint32_t operation)
      return str_lost;
 }
 
-char * decodeMIPS(uint32_t operation, unsigned long int address, char *outbuf)
+char * decodeMIPS(uint32_t operation, unsigned long int address, char *outbuf, int*lendis)
 {
+    enum GP return_reg = 0;
     uint8_t subop = 0;
+    *lendis = 4;
     if (operation == 0x00000000) {
         sprintf(outbuf, "%s", "nop");
         return outbuf;
@@ -366,7 +368,7 @@ char * decodeMIPS(uint32_t operation, unsigned long int address, char *outbuf)
                  case 0x07: sprintf(outbuf, "%s", decodeThreeRegister("srav", operation, true)); break;
                  case 0x08: sprintf(outbuf, "jr %s", getRPRegName(((enum GP)((operation >> 21) & 0x1F)))); break;
                  case 0x09:
-                      enum GP return_reg = (enum GP)((operation >> 11) & 0x1F);
+//                      enum GP return_reg = (enum GP)((operation >> 11) & 0x1F);
                       if (return_reg == ra) sprintf(outbuf, "jalr %s", getRPRegName(((enum GP)((operation >> 21) & 0x1F))));
                       else sprintf(outbuf, "jalr %s, %s", getRPRegName(return_reg), getRPRegName(((enum GP)((operation >> 21) & 0x1F))));
                       break;

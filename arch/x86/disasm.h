@@ -38,6 +38,9 @@
 #ifndef NASM_DISASM_H
 #define NASM_DISASM_H
 
+#include "sync.h"
+#include "nctype.h"
+
 #include "iflag.h"
 
 #define INSN_MAX 32             /* one instruction can't be longer than this */

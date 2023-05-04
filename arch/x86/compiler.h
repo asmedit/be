@@ -85,6 +85,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
@@ -146,20 +147,6 @@
 
 #if !defined(HAVE_STRCHRNUL) || !HAVE_DECL_STRCHRNUL
 char *strrchrnul(const char *, int);
-#endif
-
-#ifndef __cplusplus		/* C++ has false, true, bool as keywords */
-# ifdef HAVE_STDBOOL_H
-#  include <stdbool.h>
-# elif defined(HAVE__BOOL)
-   typedef _Bool bool;
-#  define false 0
-#  define true 1
-# else
-/* This is sort of dangerous, since casts will behave different than
-   casting to the standard boolean type.  Always use !!, not (bool). */
-typedef enum bool { false, true } bool;
-# endif
 #endif
 
 /* Provide a substitute for offsetof() if we don't have one.  This

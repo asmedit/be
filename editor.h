@@ -81,6 +81,7 @@ char *hexstr();
 char hexstr_set(int pos, int value);
 char hexstr_get(int pos);
 
+struct editor* editor();
 struct editor* editor_init();
 void editor_free(struct editor* e);
 void editor_openfile(struct editor* e, const char* filename);

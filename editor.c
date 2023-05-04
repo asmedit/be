@@ -21,9 +21,14 @@
 
 char* contents;
 int content_length = 0;
+static struct editor* e;
+
+struct editor* editor() {
+    return e;
+}
 
 struct editor* editor_init() {
-    struct editor* e = malloc(sizeof(struct editor));
+    e = malloc(sizeof(struct editor));
     e->octets_per_line = 24;
     e->seg_size = 64;
     e->line = 0;
@@ -45,7 +50,49 @@ struct editor* editor_init() {
     return e;
 }
 
+int editor_parse_search_string(const char* inputstr, struct charbuf* parsedstr, const char** err_info)
+{
+    char hex[3] = {'\0'};
+    *err_info = inputstr;
+    while (*inputstr != '\0') {
+        if (*inputstr == '\\') {
+            ++inputstr;
+            switch (*(inputstr)) {
+                case '\0': return PARSE_INCOMPLETE_BACKSLASH;
+                case '\\': charbuf_append(parsedstr, "\\", 1); ++inputstr; break;
+                case 'x': ++inputstr;
+                          int off = 0;
+                          if (*inputstr == '\0' || *(inputstr + 1) == '\0') return PARSE_INCOMPLETE_HEX;
+//                          while (*inputstr != '\0' && isxdigit(*inputstr + off)) {
+  //                            off++;
+    //                      }
+//                          printf("OK\n");
+//                          if (off < 2) {
+                          if (!isxdigit(*inputstr) || !isxdigit(*(inputstr + 1))) {
+                              *err_info = inputstr;
+                              return PARSE_INVALID_HEX;
+                          }
+                          memcpy(hex, inputstr, 2);
+                          char bin = hex2bin(hex);
+                          charbuf_append(parsedstr, &bin, 1);
+                          inputstr += 2;
+                          break;
+                default: *err_info = inputstr; return PARSE_INVALID_ESCAPE;
+            }
+        } else {
+            charbuf_append(parsedstr, inputstr, 1);
+            ++inputstr;
+        }
+    }
+    return PARSE_SUCCESS;
+}
+
 void editor_process_search(struct editor* e, const char* str, enum search_direction dir) {
+    struct charbuf *parsedstr = NULL;
+    const char* parse_err;
+    int parse_errno = 0;
+
+    parsedstr = charbuf_create();
     if (strncmp(str, "", INPUT_BUF_SIZE) == 0) {
         strncpy(e->searchstr, str, INPUT_BUF_SIZE);
         return;
@@ -58,9 +105,7 @@ void editor_process_search(struct editor* e, const char* str, enum search_direct
         return;
     }
 
-    struct charbuf *parsedstr = charbuf_create();
-    const char* parse_err;
-    int parse_errno = editor_parse_search_string(str, parsedstr, &parse_err);
+    parse_errno = editor_parse_search_string(str, parsedstr, &parse_err);
     switch (parse_errno) {
         case PARSE_INCOMPLETE_BACKSLASH:
              editor_statusmessage(e, STATUS_ERROR, "Nothing follows '\\' in search string: %s", str); break;
@@ -212,42 +257,6 @@ void editor_setview(struct editor* e, enum editor_view view) {
     }
 }
 
-int editor_parse_search_string(const char* inputstr, struct charbuf* parsedstr, const char** err_info)
-{
-    char hex[3] = {'\0'};
-    *err_info = inputstr;
-    while (*inputstr != '\0') {
-        if (*inputstr == '\\') {
-            ++inputstr;
-            switch (*(inputstr)) {
-                case '\0': return PARSE_INCOMPLETE_BACKSLASH;
-                case '\\': charbuf_append(parsedstr, "\\", 1); ++inputstr; break;
-                case 'x': ++inputstr;
-                          int off = 0;
-                          if (*inputstr == '\0' || *(inputstr + 1) == '\0') return PARSE_INCOMPLETE_HEX;
-//                          while (*inputstr != '\0' && isxdigit(*inputstr + off)) {
-  //                            off++;
-    //                      }
-//                          printf("OK\n");
-//                          if (off < 2) {
-                          if (!isxdigit(*inputstr) || !isxdigit(*(inputstr + 1))) {
-                              *err_info = inputstr;
-                              return PARSE_INVALID_HEX;
-                          }
-                          memcpy(hex, inputstr, 2);
-                          char bin = hex2bin(hex);
-                          charbuf_append(parsedstr, &bin, 1);
-                          inputstr += 2;
-                          break;
-                default: *err_info = inputstr; return PARSE_INVALID_ESCAPE;
-            }
-        } else {
-            charbuf_append(parsedstr, inputstr, 1);
-            ++inputstr;
-        }
-    }
-    return PARSE_SUCCESS;
-}
 
 void editor_setmode(struct editor* e, enum editor_mode mode) {
     e->mode = mode;
@@ -465,9 +474,10 @@ int editor_read_string(struct editor* e, char* dst, int len) {
 
 
 void editor_free(struct editor* e) {
-    free(e->filename);
-    free(e->contents);
-    free(e);
+    struct editor* x = editor();
+    free(x->filename);
+    free(x->contents);
+    free(x);
 }
 
 void editor_replace_byte(struct editor* e, char x) {

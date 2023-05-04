@@ -11,10 +11,10 @@
 #include "term/terminal.h"
 #include "dasm/dasm.h"
 
-static struct editor* e;
 volatile sig_atomic_t resizeflag;
 
 static void editor_exit() {
+    struct editor* e = editor();
     editor_free(e);
     clear_screen();
     disable_raw_mode();
@@ -47,6 +47,7 @@ static void handle_term_resize(int sig) {
 }
 
 static void resize_term() {
+    struct editor *e = editor();
     clear_screen();
     get_window_size(&(e->screen_rows), &(e->screen_cols));
 }
@@ -79,7 +80,9 @@ int main(int argc, char* argv[]) {
     sigaction(SIGWINCH, &act, NULL);
     resizeflag = 0;
 
-    e = editor_init();
+    editor_init();
+    struct editor* e = editor();
+
     editor_openfile(e, file);
     enable_raw_mode();
     term_state_save();
