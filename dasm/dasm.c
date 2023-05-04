@@ -117,6 +117,20 @@ static void neo_asm_emit(char ch) {
     sh4asm_disas[sh4asm_disas_len++] = ch;
 }
 
+
+uint32_t le_to_be(uint32_t num) {
+    uint8_t b[4] = {0};
+    *(uint32_t*)b = num;
+    uint8_t tmp = 0;
+    tmp = b[0];
+    b[0] = b[3];
+    b[3] = tmp;
+    tmp = b[1];
+    b[1] = b[2];
+    b[2] = tmp;
+    return *(uint32_t*)b;
+}
+
 void disassemble_screen(struct editor* e, struct charbuf* b)
 {
     struct DisasmPara_PPC dp;
@@ -169,9 +183,9 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
             case ARCH_M68K: // M68K
                disasm68k((unsigned long int)q,(unsigned long int)q+10,outbuf,&lendis);
                break;
-            case ARCH_MIPS: // M68K
+            case ARCH_MIPS: // MIPS
                uint32_t inst = (uint32_t)*((unsigned long int *)q);
-               decodeMIPS(inst,(unsigned long int)q,outbuf);
+               decodeMIPS(le_to_be(inst),(unsigned long int)q,outbuf);
                lendis = 4;
                break;
             default: break;

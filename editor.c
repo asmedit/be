@@ -45,6 +45,67 @@ struct editor* editor_init() {
     return e;
 }
 
+void editor_process_search(struct editor* e, const char* str, enum search_direction dir) {
+    if (strncmp(str, "", INPUT_BUF_SIZE) == 0) {
+        strncpy(e->searchstr, str, INPUT_BUF_SIZE);
+        return;
+    }
+
+    if (strncmp(str, e->searchstr, INPUT_BUF_SIZE) != 0) strncpy(e->searchstr, str, INPUT_BUF_SIZE);
+
+    if (dir == SEARCH_BACKWARD && editor_offset_at_cursor(e) == 0) {
+        editor_statusmessage(e, STATUS_INFO, "Already at start of the file");
+        return;
+    }
+
+    struct charbuf *parsedstr = charbuf_create();
+    const char* parse_err;
+    int parse_errno = editor_parse_search_string(str, parsedstr, &parse_err);
+    switch (parse_errno) {
+        case PARSE_INCOMPLETE_BACKSLASH:
+             editor_statusmessage(e, STATUS_ERROR, "Nothing follows '\\' in search string: %s", str); break;
+        case PARSE_INCOMPLETE_HEX:
+             editor_statusmessage(e, STATUS_ERROR, "Incomplete hex value at end of search string: %s", str); break;
+        case PARSE_INVALID_HEX:
+             editor_statusmessage(e, STATUS_ERROR, "Invalid hex value (\\x%c%c) in search string: %s", *parse_err, *(parse_err + 1), str); break;
+        case PARSE_INVALID_ESCAPE:
+             editor_statusmessage(e, STATUS_ERROR, "Invalid character after \\ (%c) in search string: %s", *parse_err, str); break;
+        case PARSE_SUCCESS: break;
+    }
+
+    if (parse_errno != PARSE_SUCCESS) {
+        charbuf_free(parsedstr);
+        return;
+    }
+
+    unsigned int current_offset = editor_offset_at_cursor(e);
+    bool found = false;
+    if (dir == SEARCH_FORWARD) {
+        current_offset++;
+        for (; current_offset < e->content_length; current_offset++) {
+            if (memcmp(e->contents + current_offset, parsedstr->contents, parsedstr->len) == 0) {
+                editor_statusmessage(e, STATUS_INFO, "");
+                editor_scroll_to_offset(e, current_offset);
+                found = true;
+                break;
+            }
+        }
+    } else if (dir == SEARCH_BACKWARD) {
+        current_offset--;
+        for (; current_offset-- != 0; ) {
+            if (memcmp(e->contents + current_offset, parsedstr->contents, parsedstr->len) == 0) {
+                editor_statusmessage(e, STATUS_INFO, "");
+                editor_scroll_to_offset(e, current_offset);
+                found = true;
+                break;
+            }
+       }
+    }
+
+    charbuf_free(parsedstr);
+    if (!found) editor_statusmessage(e, STATUS_WARNING, "String not found: '%s'", str);
+}
+
 void editor_newfile(struct editor* e, const char* filename) {
     e->filename = malloc(strlen(filename) + 1);
     e->contents = malloc(0);
@@ -151,6 +212,43 @@ void editor_setview(struct editor* e, enum editor_view view) {
     }
 }
 
+int editor_parse_search_string(const char* inputstr, struct charbuf* parsedstr, const char** err_info)
+{
+    char hex[3] = {'\0'};
+    *err_info = inputstr;
+    while (*inputstr != '\0') {
+        if (*inputstr == '\\') {
+            ++inputstr;
+            switch (*(inputstr)) {
+                case '\0': return PARSE_INCOMPLETE_BACKSLASH;
+                case '\\': charbuf_append(parsedstr, "\\", 1); ++inputstr; break;
+                case 'x': ++inputstr;
+                          int off = 0;
+                          if (*inputstr == '\0' || *(inputstr + 1) == '\0') return PARSE_INCOMPLETE_HEX;
+//                          while (*inputstr != '\0' && isxdigit(*inputstr + off)) {
+  //                            off++;
+    //                      }
+//                          printf("OK\n");
+//                          if (off < 2) {
+                          if (!isxdigit(*inputstr) || !isxdigit(*(inputstr + 1))) {
+                              *err_info = inputstr;
+                              return PARSE_INVALID_HEX;
+                          }
+                          memcpy(hex, inputstr, 2);
+                          char bin = hex2bin(hex);
+                          charbuf_append(parsedstr, &bin, 1);
+                          inputstr += 2;
+                          break;
+                default: *err_info = inputstr; return PARSE_INVALID_ESCAPE;
+            }
+        } else {
+            charbuf_append(parsedstr, inputstr, 1);
+            ++inputstr;
+        }
+    }
+    return PARSE_SUCCESS;
+}
+
 void editor_setmode(struct editor* e, enum editor_mode mode) {
     e->mode = mode;
     switch (e->mode) {
@@ -162,6 +260,7 @@ void editor_setmode(struct editor* e, enum editor_mode mode) {
         case MODE_INSERT_ASCII:  editor_statusmessage(e, STATUS_INFO, "Mode: INSERT ASCII"); break;
         case MODE_REPLACE:       editor_statusmessage(e, STATUS_INFO, "Mode: REPLACE"); break;
         case MODE_COMMAND: break;
+        case MODE_SEARCH: break;
     }
 }
 
@@ -495,6 +594,13 @@ void editor_process_keypress(struct editor* e) {
         return;
     }
 
+    if (e->mode & MODE_SEARCH) {
+        char search[INPUT_BUF_SIZE];
+        int c = editor_read_string(e, search, INPUT_BUF_SIZE);
+        if (c == KEY_ENTER && strlen(search) > 0) editor_process_search(e, search, SEARCH_FORWARD);
+        return;
+    }
+
     int c = read_key();
     if (c == -1) return;
 
@@ -525,6 +631,7 @@ void editor_process_keypress(struct editor* e) {
         case 'r': editor_setmode(e, MODE_REPLACE);      return;
         case 'R': editor_setmode(e, MODE_REPLACE_ASCII);return;
         case ':': editor_setmode(e, MODE_COMMAND);      return;
+        case '/': editor_setmode(e, MODE_SEARCH);       return;
         case KEY_HOME: e->cursor_x = 1; return;
         case KEY_END:  editor_move_cursor(e, KEY_RIGHT, e->octets_per_line - e->cursor_x); return;
         case KEY_CTRL_U:
@@ -541,6 +648,9 @@ void editor_refresh_screen(struct editor* e) {
     charbuf_append(b, "\x1b[H", 3);
     if (e->mode & MODE_COMMAND) {
         charbuf_appendf(b, "\x1b[0m\x1b[?25h\x1b[%d;1H\x1b[2K:", e->screen_rows);
+        charbuf_append(b, e->inputbuffer, e->inputbuffer_index);
+    } else if (e->mode & MODE_SEARCH) {
+        charbuf_appendf(b, "\x1b[0m\x1b[?25h\x1b[%d;1H\x1b[2K/", e->screen_rows);
         charbuf_append(b, e->inputbuffer, e->inputbuffer_index);
     } else {
         editor_render_header(e, b);
