@@ -1,3 +1,6 @@
+// Copyright (c) Namdak Tonpa
+// MIPS R4300 DASM 400 LOC
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -274,57 +277,34 @@ char * decodeMIPS(uint32_t operation, unsigned long int address, char *outbuf)
     enum RSP opcode = (enum RSP)((operation >> 26) & 0x3F);
     switch (opcode)
     {
-        case J:
-        case JAL:  sprintf(outbuf, "%s 0x0%x", rsp[opcode], ((operation & 0x03FFFFFF) << 2)); break;
-        case BEQ:
-        case BNE:  sprintf(outbuf, "%s", decodeBranchEquals(rsp[opcode], operation, address)); break;
-        case BLEZ:
-        case BGTZ: sprintf(outbuf, "%s", decodeBranch(rsp[opcode], operation, address)); break;
-        case COP0: sprintf(outbuf, "%s", decodeCOP0(operation)); break;
-        case COP1: sprintf(outbuf, "%s", decodeCOP0(operation)); break;
-        case COP2: sprintf(outbuf, "%s", decodeCOP2(operation)); break;
-        case COP3: sprintf(outbuf, "%s", decodeCOP2(operation)); break;
-        case ADDI:
-        case ADDIU:
-        case SLTI:
-        case SLTIU:
-        case ANDI:
-        case ORI:
+        case J: case JAL:
+             sprintf(outbuf, "%s 0x0%x", rsp[opcode], ((operation & 0x03FFFFFF) << 2)); break;
+        case BEQ: case BNE:
+             sprintf(outbuf, "%s", decodeBranchEquals(rsp[opcode], operation, address)); break;
+        case BLEZ: case BGTZ:
+             sprintf(outbuf, "%s", decodeBranch(rsp[opcode], operation, address)); break;
+        case COP0:
+             sprintf(outbuf, "%s", decodeCOP0(operation)); break;
+        case COP1:
+             sprintf(outbuf, "%s", decodeCOP0(operation)); break;
+        case COP2:
+             sprintf(outbuf, "%s", decodeCOP2(operation)); break;
+        case COP3:
+             sprintf(outbuf, "%s", decodeCOP2(operation)); break;
+        case ADDI: case ADDIU: case SLTI: case SLTIU: case ANDI: case ORI:
         case XORI: sprintf(outbuf, "%s", decodeTwoRegistersWithImmediate(rsp[opcode], operation)); break;
         case LUI:  sprintf(outbuf, "%s", decodeOneRegisterWithImmediate(rsp[opcode], operation)); break;
-        case LB:
-        case LH:
-        case LL:
-        case LLD:
-        case SCD:
-        case LW:
-        case LWL:
-        case LWR:
-        case LBU:
-        case LHU:
-        case LWU:
-        case SC:
-        case SB:
-        case SH:
-        case SWL:
-        case LDC:
-        case LDC2:
-        case LDC3:
-        case BGTZ2:
-        case BEQL:
-        case BNEL:
-        case BLEZL:
-        case DADDI:
-        case DADDIU:
-        case LDL:
-        case LDR:
-        case SW:   sprintf(outbuf, "%s", decodeNormalLoadStore(rsp[opcode],operation)); break;
-        case LWC1: 
-        case LWC3: 
-        case LWC2: sprintf(outbuf, "%s", decodeLoadStore(operation, "l")); break;
-        case SWC1:
-        case SWC3:
-        case SWC2: sprintf(outbuf, "%s", decodeLoadStore(operation, "s")); break;
+        case LB:    case LH:    case LL:     case LLD:   case SCD:  case LW:
+        case LWL:   case LWR:   case LBU:    case LHU:   case LWU:  case SC:
+        case SB:    case SH:    case SWL:    case LDC:   case LDC2: case LDC3:
+        case SDC1:  case SDC2:  case SDC3:   case BGTZ2: case BEQL: case BNEL:
+        case BLEZL: case DADDI: case DADDIU: case LDL:   case LDR:
+        case SW:
+             sprintf(outbuf, "%s", decodeNormalLoadStore(rsp[opcode],operation)); break;
+        case LWC1: case LWC3: case LWC2:
+             sprintf(outbuf, "%s", decodeLoadStore(operation, "l")); break;
+        case SWC1: case SWC3: case SWC2:
+             sprintf(outbuf, "%s", decodeLoadStore(operation, "s")); break;
 
         case REGIMM:
              subop = (uint8_t)((operation >> 16) & 0x1F);
@@ -367,13 +347,22 @@ char * decodeMIPS(uint32_t operation, unsigned long int address, char *outbuf)
                  case 0x0C: sprintf(outbuf, "syscall %i", ((operation >> 6) & 0xFFFFF)); break;
                  case 0x0D: sprintf(outbuf, "break %i", ((operation >> 6) & 0xFFFFF)); break;
                  case 0x0F: sprintf(outbuf, "sync %i", ((operation >> 6) & 0xFFFFF)); break;
+
                  case 0x10: sprintf(outbuf, "mfhi %i", ((operation >> 6) & 0xFFFFF)); break;
                  case 0x11: sprintf(outbuf, "mthi %i", ((operation >> 6) & 0xFFFFF)); break;
-                 case 0x12: sprintf(outbuf, "div %i", ((operation >> 6) & 0xFFFFF)); break;
-                 case 0x13: sprintf(outbuf, "divu %i", ((operation >> 6) & 0xFFFFF)); break;
-                 case 0x14: sprintf(outbuf, "dmult %i", ((operation >> 6) & 0xFFFFF)); break;
-                 case 0x15: sprintf(outbuf, "ddiv %i", ((operation >> 6) & 0xFFFFF)); break;
-                 case 0x16: sprintf(outbuf, "ddivu %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x12: sprintf(outbuf, "mflo %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x13: sprintf(outbuf, "mtlo %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x14: sprintf(outbuf, "dsllv %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x16: sprintf(outbuf, "dsrlv %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x17: sprintf(outbuf, "dsrav %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x18: sprintf(outbuf, "mult %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x19: sprintf(outbuf, "multu %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x1A: sprintf(outbuf, "div %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x1B: sprintf(outbuf, "divu %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x1C: sprintf(outbuf, "dmult %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x1D: sprintf(outbuf, "dmultu %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x1E: sprintf(outbuf, "ddiv %i", ((operation >> 6) & 0xFFFFF)); break;
+                 case 0x1F: sprintf(outbuf, "ddivu %i", ((operation >> 6) & 0xFFFFF)); break;
 
                  case 0x20: sprintf(outbuf, "%s", decodeThreeRegister("add", operation, false)); break;
                  case 0x21: sprintf(outbuf, "%s", decodeThreeRegister("addu", operation, false)); break;
@@ -386,8 +375,8 @@ char * decodeMIPS(uint32_t operation, unsigned long int address, char *outbuf)
                  case 0x2A: sprintf(outbuf, "%s", decodeThreeRegister("slt", operation, false)); break;
                  case 0x2B: sprintf(outbuf, "%s", decodeThreeRegister("sltu", operation, false)); break;
                  case 0x2C: sprintf(outbuf, "%s", decodeThreeRegister("dadd", operation, false)); break;
-                 case 0x2D: sprintf(outbuf, "%s", decodeThreeRegister("dsub", operation, false)); break;
-                 case 0x2E: sprintf(outbuf, "%s", decodeThreeRegister("dsubu", operation, false)); break;
+                 case 0x2D: sprintf(outbuf, "%s", decodeThreeRegister("daddu", operation, false)); break;
+                 case 0x2E: sprintf(outbuf, "%s", decodeThreeRegister("dsub", operation, false)); break;
                  case 0x2F: sprintf(outbuf, "%s", decodeThreeRegister("dsubu", operation, false)); break;
 
                  case 0x30: sprintf(outbuf, "%s", decodeThreeRegister("tge", operation, false)); break;
