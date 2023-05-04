@@ -2769,3 +2769,22 @@ ppc_word *PPC_Disassemble(struct DisasmPara_PPC *dp)
   }
   return (dp->instr + 1);
 }
+
+    struct DisasmPara_PPC dp;
+    char ppc_opcode[640];
+    char ppc_operands[2560];
+
+char * decodePPC(unsigned long int start, char *outbuf, int *lendis)
+{
+     dp.opcode = ppc_opcode;
+     dp.operands = ppc_operands;
+     dp.iaddr = (unsigned int *)start;
+     dp.instr = (unsigned int *)start;
+     PPC_Disassemble(&dp);
+     memcpy(outbuf,ppc_opcode,strlen(ppc_opcode));
+     memcpy(outbuf+strlen(ppc_opcode)," ",1);
+     memcpy(outbuf+strlen(ppc_opcode)+1,ppc_operands,strlen(ppc_operands));
+     memcpy(outbuf+strlen(ppc_opcode)+1+strlen(ppc_operands),"\0",1);
+     *lendis = sizeof(ppc_word);
+     return outbuf;
+}

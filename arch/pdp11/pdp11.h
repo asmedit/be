@@ -1,3 +1,3 @@
 #include <stdint.h>
 
-char * decodePDP11(uint32_t operation, unsigned long int address, char *outbuf, int *len);
+char * decodePDP11(unsigned long int address, char *outbuf, int *len);

@@ -12,6 +12,7 @@ objects := be.o editor.o \
 	arch/riscv/riscv-disas.o \
 	arch/ppc/ppc_disasm.o \
 	arch/m68k/dis68k.o \
+	arch/sh4/sh4.o \
 	arch/mips/mips-rsp.o \
 	arch/pdp11/pdp11.o
 

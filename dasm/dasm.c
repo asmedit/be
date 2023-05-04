@@ -21,7 +21,7 @@
 #include "../arch/ppc/ppc_disasm.h"
 #include "../arch/mips/mips.h"
 #include "../arch/m68k/m68k.h"
-#include "../arch/sh4/sh4dis.h"
+#include "../arch/sh4/sh4.h"
 #include "../arch/pdp11/pdp11.h"
 
 #define LINES 140
@@ -96,110 +96,39 @@ int offset_at_cursor_dasm(struct editor* e) {
     return offset;
 }
 
-rv_isa bitness(struct editor* e)
+char *decode(unsigned long int start, char *outbuf, int *lendis)
 {
-    switch (e->seg_size) {
-        case 32:  return rv32;
-        case 64:  return rv64;
-        case 128: return rv128;
-        default:  return rv64;
-    }
-}
-
-#define SH4ASM_TXT_LEN 228
-static char sh4asm_disas[SH4ASM_TXT_LEN];
-unsigned sh4asm_disas_len;
-static void clear_asm(void) { sh4asm_disas_len = 0; }
-static void neo_asm_emit(char ch) {
     struct editor *e = editor();
-    if (sh4asm_disas_len >= SH4ASM_TXT_LEN)
-        editor_statusmessage(e, STATUS_INFO, "SuperH dissassembler overflow.");
-    sh4asm_disas[sh4asm_disas_len++] = ch;
-}
-
-uint32_t le_to_be(uint32_t num) {
-    uint8_t b[4] = {0};
-    *(uint32_t*)b = num;
-    uint8_t tmp = 0;
-    tmp = b[0];
-    b[0] = b[3];
-    b[3] = tmp;
-    tmp = b[1];
-    b[1] = b[2];
-    b[2] = tmp;
-    return *(uint32_t*)b;
+    switch (e->arch) {
+         case ARCH_INTEL: decodeEM64T (start, outbuf, lendis); break;
+         case ARCH_ARM:   decodeARM   (start, outbuf, lendis); break;
+         case ARCH_PPC:   decodePPC   (start, outbuf, lendis); break;
+         case ARCH_RISCV: decodeRISCV (start, outbuf, lendis); break;
+         case ARCH_SH4:   decodeSH4   (start, outbuf, lendis); break;
+         case ARCH_M68K:  decodeM68K  (start, outbuf, lendis); break;
+         case ARCH_MIPS:  decodeMIPS  (start, outbuf, lendis); break;
+         case ARCH_PDP11: decodePDP11 (start, outbuf, lendis); break;
+         default: break;
+     }
+     return outbuf;
 }
 
 void disassemble_screen(struct editor* e, struct charbuf* b)
 {
-    struct DisasmPara_PPC dp;
-    char ppc_opcode[640];
-    char ppc_operands[2560];
-    struct rv_inst *rvinst = NULL;
-    struct ad_insn *insn = NULL;
-    uint32_t inst = 0;
-    uint32_t inst16 = 0;
-    int offset = e->offset_dasm;
-    char buffer[INSN_MAX * 2], *p, *ep, *q, outbuf[2048];
-    unsigned int * opcode = NULL;
-    uint32_t nextsync, synclen, initskip = 0L;
-    int32_t lendis; bool autosync = false; iflag_t prefer; iflag_clear_all(&prefer);
+    int lendis=0;
+    unsigned long int offset=0;
+    char outbuf[2048], *p, *q;
+    offset = e->offset_dasm;
     q = &e->contents[offset];
     p = &e->contents[0] + e->content_length;
-    for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length) {
-        switch (e->arch) {
-            case ARCH_INTEL: // Nasm
-               lendis = disasm((uint8_t *)q, INSN_MAX, outbuf, sizeof(outbuf), e->seg_size, offset, autosync, &prefer);
-               if (!lendis || lendis > (p - q) || ((nextsync || synclen) && (uint32_t)lendis > nextsync - offset))
-                   lendis = eatbyte((uint8_t *) q, outbuf, sizeof(outbuf), e->seg_size); break;
-            case ARCH_ARM: // Armadillo
-               lendis = 4; opcode = q;
-               ArmadilloDisassemble(*opcode, opcode, &insn);
-               memcpy(outbuf,insn->decoded,strlen(insn->decoded)+1);
-               ArmadilloDone(&insn); break;
-            case ARCH_RISCV: // SiFive
-               inst_fetch((uint8_t *)q, &rvinst, &lendis);
-               disasm_inst(outbuf, sizeof(outbuf), bitness(e), q, rvinst); break;
-            case ARCH_PPC: // PowerPC
-               dp.opcode = ppc_opcode;
-               dp.operands = ppc_operands;
-               dp.iaddr = (unsigned int *)q;
-               dp.instr = (unsigned int *)q;
-               PPC_Disassemble(&dp);
-               memcpy(outbuf,ppc_opcode,strlen(ppc_opcode));
-               memcpy(outbuf+strlen(ppc_opcode)," ",1);
-               memcpy(outbuf+strlen(ppc_opcode)+1,ppc_operands,strlen(ppc_operands));
-               memcpy(outbuf+strlen(ppc_opcode)+1+strlen(ppc_operands),"\0",1);
-               lendis = sizeof(ppc_word);
-               break;
-            case ARCH_SH4: // SuperH-4
-               inst16 = (uint16_t)*q;
-               memset(sh4_buf, 0, sizeof(sh4_buf));
-               clear_asm();
-               sh4asm_disas_inst(inst16, neo_asm_emit, 0);
-               memcpy(outbuf,sh4asm_disas,sh4asm_disas_len);
-               memcpy(outbuf+sh4asm_disas_len,"\0",1);
-               lendis = 2;
-               break;
-            case ARCH_M68K: // M68K
-               disasm68k((unsigned long int)q,(unsigned long int)q+10,outbuf,&lendis);
-               break;
-            case ARCH_MIPS: // MIPS
-               inst = (uint32_t)*((unsigned long int *)q);
-               decodeMIPS(le_to_be(inst),(unsigned long int)q,outbuf,&lendis);
-               break;
-            case ARCH_PDP11: // PDP-11
-               inst = (uint32_t)*((unsigned long int *)q);
-               decodePDP11(inst,(unsigned long int)q,outbuf,&lendis);
-               break;
-            default: break;
-        }
+    for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length)
+    {
+        decode(q, outbuf, &lendis);
         setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
         q += lendis;
         offset += lendis;
     }
 }
-
 
 void editor_render_dasm(struct editor* e, struct charbuf* b)
 {

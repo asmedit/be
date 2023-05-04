@@ -135,9 +135,7 @@ struct DisasmPara_PPC {
 #define PPCF_ALTIVEC   (1<<4)   /* AltiVec instruction */
 
 
-/* ppc_disasm.o prototypes */
-#ifndef PPC_DISASM_C
 extern ppc_word *PPC_Disassemble(struct DisasmPara_PPC *);
-#endif
 
+char * decodePPC(unsigned long int start, char *outbuf, int *lendis);
 

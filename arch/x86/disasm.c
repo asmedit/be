@@ -36,8 +36,6 @@
  */
 
 #include "compiler.h"
-
-
 #include "nasm.h"
 #include "disasm.h"
 #include "sync.h"
@@ -45,6 +43,8 @@
 #include "tables.h"
 #include "regdis.h"
 #include "disp8.h"
+
+#include "../../editor.h"
 
 #define fetch_safe(_start, _ptr, _size, _need, _op)         \
     do {                                                    \
@@ -1759,4 +1759,21 @@ int32_t eatbyte(uint8_t *data, char *output, int outbufsize, int segsize)
         snprintf(output, outbufsize, "%s", str);
 
     return 1;
+}
+
+
+char * decodeEM64T(unsigned long int start, char *outbuf, int *lendis)
+{
+    uint32_t nextsync, synclen, initskip = 0L;
+    bool autosync = false;
+    iflag_t prefer;
+    struct editor* e = editor();
+    int offset = start;
+    iflag_clear_all(&prefer);
+    char *qx = (char *)start;
+    char *px = &e->contents[0] + e->content_length;
+    *lendis = disasm((uint8_t *)qx, INSN_MAX, outbuf, 4096, e->seg_size, offset, autosync, &prefer);
+    if (!*lendis || *lendis > (px - qx) || ((nextsync || synclen) && (uint32_t)*lendis > nextsync - offset))
+         *lendis = eatbyte((uint8_t *) qx, outbuf, 4096, e->seg_size);
+    return outbuf;
 }

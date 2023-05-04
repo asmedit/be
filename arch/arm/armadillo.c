@@ -7,12 +7,26 @@
 #include "common.h"
 #include "instruction.h"
 #include "strext.h"
+#include "armadillo.h"
 
 #include "BranchExcSys.h"
 #include "DataProcessingImmediate.h"
 #include "DataProcessingFloatingPoint.h"
 #include "DataProcessingRegister.h"
 #include "LoadsAndStores.h"
+
+unsigned int * opcode = NULL;
+struct ad_insn *insn = NULL;
+
+char *decodeARM(unsigned long int start, char *outbuf, int *lendis)
+{
+     *lendis = 4;
+     opcode = start;
+     ArmadilloDisassemble(*opcode, opcode, &insn);
+     memcpy(outbuf,insn->decoded,strlen(insn->decoded)+1);
+     ArmadilloDone(&insn);
+     return outbuf;
+}
 
 static int _ArmadilloDisassemble(struct instruction *i,
         struct ad_insn **_out){

@@ -72,8 +72,9 @@ const char* fmt_mode[] = {
 
 const int mode[] = { 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, };
 
-char * decodePDP11(uint32_t operation, unsigned long int address, char *outbuf, int *lendis)
+char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
 {
+    uint32_t operation = (uint32_t)*((unsigned long int *)address);
     memcpy(outbuf,"\0",1);
     *lendis = 2;
     return outbuf;

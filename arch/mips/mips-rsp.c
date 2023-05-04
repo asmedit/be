@@ -267,8 +267,22 @@ char *decodeSpecialShift(char *opcode, uint32_t operation)
      return str_lost;
 }
 
-char * decodeMIPS(uint32_t operation, unsigned long int address, char *outbuf, int*lendis)
+uint32_t le_to_be(uint32_t num) {
+    uint8_t b[4] = {0};
+    *(uint32_t*)b = num;
+    uint8_t tmp = 0;
+    tmp = b[0];
+    b[0] = b[3];
+    b[3] = tmp;
+    tmp = b[1];
+    b[1] = b[2];
+    b[2] = tmp;
+    return *(uint32_t*)b;
+}
+
+char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis)
 {
+    uint32_t operation = le_to_be( (uint32_t)*((unsigned long int *)address));
     enum GP return_reg = 0;
     uint8_t subop = 0;
     *lendis = 4;

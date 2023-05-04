@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 
+#include "../../editor.h"
 #include "riscv-disas.h"
 
 typedef struct {
@@ -2257,4 +2258,24 @@ void disasm_inst(char *buf, size_t buflen, rv_isa isa, uint64_t pc, rv_inst inst
     decode_inst_decompress(&dec, isa);
     decode_inst_lift_pseudo(&dec);
     decode_inst_format(buf, buflen, 0, &dec);
+}
+
+rv_isa bitness(struct editor* e)
+{
+    switch (e->seg_size) {
+        case 32:  return rv32;
+        case 64:  return rv64;
+        case 128: return rv128;
+        default:  return rv64;
+    }
+}
+
+static rv_inst rvinst = 0;
+
+char *decodeRISCV(unsigned long int address, char *outbuf, int *lendis) {
+     struct editor *e = editor();
+     *lendis = 0;
+     inst_fetch((uint8_t *)address, &rvinst, lendis);
+     if (*lendis) disasm_inst(outbuf, 100, bitness(e), address, rvinst); else *lendis = 2;
+     return outbuf;
 }

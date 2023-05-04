@@ -194,7 +194,8 @@ int getmode(int instruction) {
 	return mode;
 }
 
-void disasm68k(unsigned long int start, unsigned long int end, char *outbuf, int *outlen) {
+void decodeM68K(unsigned long int start, char *outbuf, int *outlen) {
+	unsigned long int end = start + 10;
 	address = start;
 	char operand_s[100];
 

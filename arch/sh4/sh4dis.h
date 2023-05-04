@@ -39,10 +39,6 @@
 
 #include "sh4asm_txt_emit.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define SH4ASM_STATIC static inline
 
 /*******************************************************************************
@@ -1346,9 +1342,5 @@ sh4asm_disas_inst(uint16_t inst, sh4asm_disas_emit_func em, uint32_t pc) {
  non_inst:
     sh4asm_opcode_non_inst_(quads, em);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
