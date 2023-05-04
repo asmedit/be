@@ -216,15 +216,15 @@ char *decodeTwoRegistersWithImmediate(char *opcode, uint32_t operation)
      enum GP dest = (enum GP)((operation >> 16) & 0x1F);
      enum GP base_  = (enum GP)((operation >> 21) & 0x1F);
      uint16_t imm = (uint16_t)(operation & 0xFFFF);
-     if (imm < 0) sprintf(str_lost,"%s %s, %s, %x", opcode, getRPRegName(dest), getRPRegName(base_), imm);
-             else sprintf(str_lost,"%s %s, %s, %x", opcode, getRPRegName(dest), getRPRegName(base_), imm);
+     if (imm < 0) sprintf(str_lost,"%s %s, %s, 0x%x", opcode, getRPRegName(dest), getRPRegName(base_), imm);
+             else sprintf(str_lost,"%s %s, %s, 0x%x", opcode, getRPRegName(dest), getRPRegName(base_), imm);
      return str_lost;
 }
 
 char *decodeOneRegisterWithImmediate(char *opcode, uint32_t operation)
 {
      enum GP dest = (enum GP)((operation >> 16) & 0x1F);
-     sprintf(str_reg, "%s %s, 0x%i", opcode, getRPRegName(dest), operation & 0xFFFF);
+     sprintf(str_reg, "%s %s, 0x%x", opcode, getRPRegName(dest), operation & 0xFFFF);
      return str_reg;
 }
 
@@ -277,34 +277,60 @@ char * decodeMIPS(uint32_t operation, unsigned long int address, char *outbuf)
     enum RSP opcode = (enum RSP)((operation >> 26) & 0x3F);
     switch (opcode)
     {
-        case J: case JAL:
-             sprintf(outbuf, "%s 0x0%x", rsp[opcode], ((operation & 0x03FFFFFF) << 2)); break;
-        case BEQ: case BNE:
-             sprintf(outbuf, "%s", decodeBranchEquals(rsp[opcode], operation, address)); break;
-        case BLEZ: case BGTZ:
-             sprintf(outbuf, "%s", decodeBranch(rsp[opcode], operation, address)); break;
-        case COP0:
-             sprintf(outbuf, "%s", decodeCOP0(operation)); break;
-        case COP1:
-             sprintf(outbuf, "%s", decodeCOP0(operation)); break;
-        case COP2:
-             sprintf(outbuf, "%s", decodeCOP2(operation)); break;
-        case COP3:
-             sprintf(outbuf, "%s", decodeCOP2(operation)); break;
-        case ADDI: case ADDIU: case SLTI: case SLTIU: case ANDI: case ORI:
-        case XORI: sprintf(outbuf, "%s", decodeTwoRegistersWithImmediate(rsp[opcode], operation)); break;
-        case LUI:  sprintf(outbuf, "%s", decodeOneRegisterWithImmediate(rsp[opcode], operation)); break;
-        case LB:    case LH:    case LL:     case LLD:   case SCD:  case LW:
-        case LWL:   case LWR:   case LBU:    case LHU:   case LWU:  case SC:
-        case SB:    case SH:    case SWL:    case LDC:   case LDC2: case LDC3:
-        case SDC1:  case SDC2:  case SDC3:   case BGTZ2: case BEQL: case BNEL:
-        case BLEZL: case DADDI: case DADDIU: case LDL:   case LDR:
-        case SW:
-             sprintf(outbuf, "%s", decodeNormalLoadStore(rsp[opcode],operation)); break;
-        case LWC1: case LWC3: case LWC2:
-             sprintf(outbuf, "%s", decodeLoadStore(operation, "l")); break;
-        case SWC1: case SWC3: case SWC2:
-             sprintf(outbuf, "%s", decodeLoadStore(operation, "s")); break;
+        case J:
+        case JAL:   sprintf(outbuf, "%s 0x0%x", rsp[opcode], ((operation & 0x03FFFFFF) << 2)); break;
+        case BEQ:
+        case BNE:   sprintf(outbuf, "%s", decodeBranchEquals(rsp[opcode], operation, address)); break;
+        case BLEZ:
+        case BGTZ:  sprintf(outbuf, "%s", decodeBranch(rsp[opcode], operation, address)); break;
+        case COP0:  sprintf(outbuf, "%s", decodeCOP0(operation)); break;
+        case COP1:  sprintf(outbuf, "%s", decodeCOP0(operation)); break;
+        case COP2:  sprintf(outbuf, "%s", decodeCOP2(operation)); break;
+        case COP3:  sprintf(outbuf, "%s", decodeCOP2(operation)); break;
+        case ADDI:
+        case ADDIU:
+        case SLTI:
+        case SLTIU:
+        case ANDI:
+        case ORI:
+        case XORI:  sprintf(outbuf, "%s", decodeTwoRegistersWithImmediate(rsp[opcode], operation)); break;
+        case LUI:   sprintf(outbuf, "%s", decodeOneRegisterWithImmediate(rsp[opcode], operation)); break;
+        case LB:
+        case LH:
+        case LL:
+        case LLD:
+        case SCD:
+        case LW:
+        case LWL:
+        case LWR:
+        case LBU:
+        case LHU:
+        case LWU:
+        case SC:
+        case SB:
+        case SH:
+        case SWL:
+        case LDC:
+        case LDC2:
+        case LDC3:
+        case SDC1:
+        case SDC2:
+        case SDC3:
+        case BGTZ2:
+        case BEQL:
+        case BNEL:
+        case BLEZL:
+        case DADDI:
+        case DADDIU:
+        case LDL:
+        case LDR:
+        case SW:    sprintf(outbuf, "%s", decodeNormalLoadStore(rsp[opcode],operation)); break;
+        case LWC1:
+        case LWC3:
+        case LWC2:  sprintf(outbuf, "%s", decodeLoadStore(operation, "l")); break;
+        case SWC1:
+        case SWC3:
+        case SWC2:  sprintf(outbuf, "%s", decodeLoadStore(operation, "s")); break;
 
         case REGIMM:
              subop = (uint8_t)((operation >> 16) & 0x1F);
