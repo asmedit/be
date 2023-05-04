@@ -188,6 +188,8 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
                decodeMIPS(le_to_be(inst),(unsigned long int)q,outbuf);
                lendis = 4;
                break;
+            case ARCH_PDP11: // PDP-11
+               break;
             default: break;
         }
         setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);

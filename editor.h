@@ -19,6 +19,7 @@ enum dasm_arch {
     ARCH_SH4 = 5,
     ARCH_M68K = 6,
     ARCH_MIPS = 7,
+    ARCH_PDP11 = 8,
 };
 
 enum editor_mode {
