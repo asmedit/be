@@ -42,7 +42,7 @@ struct Plain one[] = {
   { .name = "sxt", .code = 67 },    { .name = "mtps", .code = 1064 },
   { .name = "mfps", .code = 1067 }, { .name = 0, .code = 0 } };
 
-struct Plain jump[] = {
+struct Plain jmp[] = {
   { .name = "br",   .code = 04 },   { .name = "bne", .code = 10 },
   { .name = "beq",  .code = 14 },   { .name = "bge", .code = 20 },
   { .name = "blt",  .code = 24 },   { .name = "bgt", .code = 30 },
@@ -60,8 +60,8 @@ struct Immediate imm[] = {
   { .name = 0, .code = 0, .upper = 0 } };
 
 const char* two[] = {
-  0, "mov", "cmp", "bit", "bic", "bis", "add", 0, 0,
-  "movb", "cmpb", "bitb", "bicb", "bisb", "sub", 0 };
+  "", "mov",  "cmp",  "bit",  "bic",  "bis",  "add", "",
+  "", "movb", "cmpb", "bitb", "bicb", "bisb", "sub", 0 };
 
 struct Plain xor[] = {
   { .name = "jsr", .code = 4000 },
@@ -80,6 +80,7 @@ char *decodeArgs(char *out, uint16_t inst, unsigned long int addr)
 {
     unsigned o = strlen(out);
     unsigned r = (inst >> 3) & 7;
+    if (!mode[r]) { sprintf(out+o, fmt_mode[r], regs[(inst)&7]); return out; }
     if ((inst & 7) == 7) r += 8;
     sprintf(out+o, fmt_mode[r], regs[inst&7]);
     return out;
@@ -90,33 +91,49 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
     struct editor *e = editor();
     unsigned long int start = address;
     int i;
-    uint16_t operation = (uint16_t)*((unsigned long int *)address++);
-    operation = (operation >> 8) | (operation << 8);
+    uint16_t operation = (uint16_t)*((unsigned long int *)address);
+//    operation = (operation >> 8) | (operation << 8);
+    for (i = 0; i < 1000; i++) pdpout[i] = 0;
 
-    editor_statusmessage(e, STATUS_INFO, "Operation: %x", operation);
-
-    for (i = 0; direct[i].name; i++) {
-         if (operation == direct[i].code) sprintf(pdpout, "%s", direct[i].name);
-         *lendis = 2;
-         return outbuf;
+    for (i = 0; direct[i].name; i++) if (operation == direct[i].code) {
+         sprintf(pdpout, "%s", direct[i].name);
+         goto end;
     }
 
-    for (i = 0; one[i].name; i++) {
-         if ((operation >> 6) == one[i].code) sprintf(pdpout, "%s ", one[i].name);
+    for (i = 0; one[i].name; i++) if ((operation >> 6) == one[i].code) {
+         sprintf(pdpout, "%s ", one[i].name);
          decodeArgs(pdpout, operation, address);
-         *lendis = (address - start);
-         return outbuf;
+         goto end;
     }
 
-    for (i = 0; two[i]; i++) {
-         if (((operation >> 12) == i) && two[i]) sprintf(pdpout, "%s ", two[i]);
-         decodeArgs(pdpout, operation >> 6, address);
+    for (i = 0; jmp[i].name; i++) if ((operation >> 8) == (jmp[i].code >> 2)) {
+         sprintf(pdpout, "%s 0x%xh", jmp[i].name, ((operation & 0x80) ? (operation | ~0xFF) : (operation & 0xFF)) * 2 + 0 + 2);
+         goto end;
+    }
+
+    for (i = 0; imm[i].name; i++) if ((operation & ~imm[i].upper) == imm[i].code) {
+         sprintf(pdpout, "%s %u.", imm[i].name, operation & imm[i].upper);
+         goto end;
+    }
+
+    for (i = 0; two[i]; i++) if (((operation >> 12 & 0xF) == i)) {
+         sprintf(pdpout, "%s ", two[i]);
+         decodeArgs(pdpout, (operation >> 6) & 0x3F, address);
          sprintf(pdpout+strlen(pdpout), ", ");
-         decodeArgs(pdpout+strlen(pdpout), operation, address);
-         *lendis = (address - start);
-         return outbuf;
+         decodeArgs(pdpout+strlen(pdpout), operation & 0x3F, address);
+         goto end;
     }
 
+    for (i = 0; xor[i].name; i++) if ((operation & 777000) == xor[i].code) {
+         sprintf(pdpout, "%s %s, ", xor[i].name, regs[(operation >> 6) & 7]);
+         decodeArgs(pdpout, operation, address);
+         goto end;
+    }
+
+end:
+    memcpy(outbuf,pdpout,strlen(pdpout));
+    outbuf[strlen(pdpout)] = 0;
+    *lendis = 2;
     return outbuf;
 }
 
