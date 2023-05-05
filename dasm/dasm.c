@@ -25,9 +25,9 @@
 #include "../arch/pdp11/pdp11.h"
 
 #define LINES 140
-#define DUMP  16
-#define ADDR  8
-#define CODE  64
+#define DUMP  32
+#define ADDR  16
+#define CODE  256
 #define ADDRWIN 16
 #define DUMPWIN 32
 #define CODEWIN 64

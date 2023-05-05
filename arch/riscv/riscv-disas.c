@@ -2071,7 +2071,7 @@ static void decode_inst_format(char *buf, size_t buflen, size_t tab, rv_decode *
     char tmp[64];
     const char *fmt;
 
-    size_t len = inst_length(dec->inst);
+    int len = inst_length(dec->inst);
 
     snprintf(buf, buflen, "%s", "\0");
 
@@ -2276,6 +2276,7 @@ char *decodeRISCV(unsigned long int address, char *outbuf, int *lendis) {
      struct editor *e = editor();
      *lendis = 0;
      inst_fetch((uint8_t *)address, &rvinst, lendis);
-     if (*lendis) disasm_inst(outbuf, 500, bitness(e), address, rvinst); else *lendis = 2;
+     disasm_inst(outbuf, sizeof(outbuf), bitness(e), address, rvinst);
+     if (!*lendis) *lendis = 2;
      return outbuf;
 }
