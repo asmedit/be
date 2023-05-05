@@ -2217,7 +2217,7 @@ static void decode_inst_format(char *buf, size_t buflen, size_t tab, rv_decode *
 
 /* instruction length */
 
-size_t inst_length(rv_inst inst)
+int inst_length(rv_inst inst)
 {
     /* NOTE: supports maximum instruction size of 64-bits */
 
@@ -2238,10 +2238,10 @@ size_t inst_length(rv_inst inst)
 
 /* instruction fetch */
 
-void inst_fetch(uint8_t *data, rv_inst *instp, size_t *length)
+void inst_fetch(uint8_t *data, rv_inst *instp, int *length)
 {
     rv_inst inst = ((rv_inst)data[1] << 8) | ((rv_inst)data[0]);
-    size_t len = *length = inst_length(inst);
+    int len = *length = inst_length(inst);
     if (len >= 8) inst |= ((rv_inst)data[7] << 56) | ((rv_inst)data[6] << 48);
     if (len >= 6) inst |= ((rv_inst)data[5] << 40) | ((rv_inst)data[4] << 32);
     if (len >= 4) inst |= ((rv_inst)data[3] << 24) | ((rv_inst)data[2] << 16);
@@ -2276,6 +2276,6 @@ char *decodeRISCV(unsigned long int address, char *outbuf, int *lendis) {
      struct editor *e = editor();
      *lendis = 0;
      inst_fetch((uint8_t *)address, &rvinst, lendis);
-     if (*lendis) disasm_inst(outbuf, 100, bitness(e), address, rvinst); else *lendis = 2;
+     if (*lendis) disasm_inst(outbuf, 500, bitness(e), address, rvinst); else *lendis = 2;
      return outbuf;
 }
