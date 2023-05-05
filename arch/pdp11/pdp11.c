@@ -39,8 +39,9 @@ struct Plain one[] = {
   { .name = "rol", .code = 61 },    { .name = "rolb", .code = 1061 },
   { .name = "asr", .code = 62 },    { .name = "asrb", .code = 1062 },
   { .name = "asl", .code = 63 },    { .name = "aslb", .code = 1063 },
-  { .name = "sxt", .code = 67 },    { .name = "mtps", .code = 1064 },
-  { .name = "mfps", .code = 1067 }, { .name = 0, .code = 0 } };
+  { .name = "???", .code = 64 },    { .name = "mtps", .code = 1064 },
+  { .name = "sxt", .code = 67 },    { .name = "mfps", .code = 1067 },
+  { .name = 0, .code = 0 } };
 
 struct Plain jmp[] = {
   { .name = "br",   .code = 04 },   { .name = "bne", .code = 10 },
@@ -59,40 +60,30 @@ struct Immediate imm[] = {
   { .name = "mark", .code = 6400, .upper = 77 },
   { .name = 0, .code = 0, .upper = 0 } };
 
-const char* two[] = {
-  "", "mov",  "cmp",  "bit",  "bic",  "bis",  "add", "",
-  "", "movb", "cmpb", "bitb", "bicb", "bisb", "sub", 0 };
+char* two[] = {
+  "x", "mov",  "cmp",  "bit",  "bic",  "bis",  "add", "y",
+  "z", "movb", "cmpb", "bitb", "bicb", "bisb", "sub", "w", 0 };
 
 struct Plain xor[] = {
   { .name = "jsr", .code = 4000 },
   { .name = "xor", .code = 74000 },
   { .name = 0, .code = 0 } };
 
-const char* fmt_mode[] = {
-  "%s", "(%s)", "(%s)+", "@(%s)+", "-(%s)", "@-(%s)", "%u(%s)", "@%u(%s)",
-  "pc", "(pc)", "#%u",   "@#%u",   "-(pc)", "@-(pc)", "%u",     "(%u)" };
-
-const int mode[] = { 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, };
-
+char* reg_addr[] = { "%s", "(%s)", "(%s)+", "@(%s)+", "-(%s)", "@-(%s)", "%X(%s)", "@%X(%s)", 0 };
 char pdpout[1000];
 
-char *decodeArgs(char *out, uint16_t inst, unsigned long int addr)
-{
-    unsigned o = strlen(out);
-    unsigned r = (inst >> 3) & 7;
-    if (!mode[r]) { sprintf(out+o, fmt_mode[r], regs[(inst)&7]); return out; }
-    if ((inst & 7) == 7) r += 8;
-    sprintf(out+o, fmt_mode[r], regs[inst&7]);
-    return out;
+uint16_t pdp11word(unsigned long int address) {
+    uint16_t operation = (uint16_t)*((unsigned long int *)address);
+    operation = (operation << 8) | (operation & 0xFF);
+    return operation;
 }
 
 char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
 {
     struct editor *e = editor();
-    unsigned long int start = address;
-    int i;
-    uint16_t operation = (uint16_t)*((unsigned long int *)address);
-//    operation = (operation >> 8) | (operation << 8);
+    unsigned long int start = address, i;
+    unsigned long int finish = address + 2;
+    uint16_t operation = pdp11word(start);
     for (i = 0; i < 1000; i++) pdpout[i] = 0;
 
     for (i = 0; direct[i].name; i++) if (operation == direct[i].code) {
@@ -101,13 +92,15 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
     }
 
     for (i = 0; one[i].name; i++) if ((operation >> 6) == one[i].code) {
+         uint8_t dst_reg = (operation >> 0) & 7;
+         uint8_t dst_mod = (operation >> 3) & 7;
          sprintf(pdpout, "%s ", one[i].name);
-         decodeArgs(pdpout, operation, address);
+         sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
          goto end;
     }
 
     for (i = 0; jmp[i].name; i++) if ((operation >> 8) == (jmp[i].code >> 2)) {
-         sprintf(pdpout, "%s 0x%xh", jmp[i].name, ((operation & 0x80) ? (operation | ~0xFF) : (operation & 0xFF)) * 2 + 0 + 2);
+         sprintf(pdpout, "%s 0x%x", jmp[i].name, ((operation & 0x80) ? (operation | ~0xFF) : (operation & 0xFF)) * 2 + 0 + 2);
          goto end;
     }
 
@@ -116,24 +109,34 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          goto end;
     }
 
-    for (i = 0; two[i]; i++) if (((operation >> 12 & 0xF) == i)) {
+    for (i = 0; two[i]; i++) if ((operation >> 12) == i) {
+         uint8_t dst_reg = (operation >> 0) & 7;
+         uint8_t dst_mod = (operation >> 3) & 7;
+         uint8_t src_reg = (operation >> 6) & 7;
+         uint8_t src_mod = (operation >> 9) & 7;
          sprintf(pdpout, "%s ", two[i]);
-         decodeArgs(pdpout, (operation >> 6) & 0x3F, address);
+         if (src_mod < 6) sprintf(pdpout+strlen(pdpout), reg_addr[src_mod], regs[src_reg]);
+         else { sprintf(pdpout+strlen(pdpout), reg_addr[src_mod], pdp11word(finish), regs[src_reg]); finish += 2; }
          sprintf(pdpout+strlen(pdpout), ", ");
-         decodeArgs(pdpout+strlen(pdpout), operation & 0x3F, address);
+         if (dst_mod < 6) sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
+         else { sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], pdp11word(finish), regs[dst_reg]); finish += 2; }
          goto end;
     }
 
     for (i = 0; xor[i].name; i++) if ((operation & 777000) == xor[i].code) {
+         uint8_t dst_reg = (operation >> 0) & 7;
+         uint8_t dst_mod = (operation >> 3) & 7;
          sprintf(pdpout, "%s %s, ", xor[i].name, regs[(operation >> 6) & 7]);
-         decodeArgs(pdpout, operation, address);
+         sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
          goto end;
     }
 
+    sprintf(pdpout, ".word 0x%x", operation);
+
 end:
     memcpy(outbuf,pdpout,strlen(pdpout));
-    outbuf[strlen(pdpout)] = 0;
-    *lendis = 2;
+    outbuf[strlen(pdpout)] = '\0';
+    *lendis = finish - start;
     return outbuf;
 }
 
