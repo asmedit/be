@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "../../editor.h"
+
 struct Plain { const char* name; unsigned code; };
 struct Immediate { const char* name; unsigned code; short upper; };
 
@@ -58,7 +60,7 @@ struct Immediate imm[] = {
   { .name = 0, .code = 0, .upper = 0 } };
 
 const char* two[] = {
-  "", "mov", "cmp", "bit", "bic", "bis", "add", "", "",
+  0, "mov", "cmp", "bit", "bic", "bis", "add", 0, 0,
   "movb", "cmpb", "bitb", "bicb", "bisb", "sub", 0 };
 
 struct Plain xor[] = {
@@ -72,10 +74,49 @@ const char* fmt_mode[] = {
 
 const int mode[] = { 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, };
 
+char pdpout[1000];
+
+char *decodeArgs(char *out, uint16_t inst, unsigned long int addr)
+{
+    unsigned o = strlen(out);
+    unsigned r = (inst >> 3) & 7;
+    if ((inst & 7) == 7) r += 8;
+    sprintf(out+o, fmt_mode[r], regs[inst&7]);
+    return out;
+}
+
 char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
 {
-    uint32_t operation = (uint32_t)*((unsigned long int *)address);
-    memcpy(outbuf,"\0",1);
-    *lendis = 2;
+    struct editor *e = editor();
+    unsigned long int start = address;
+    int i;
+    uint16_t operation = (uint16_t)*((unsigned long int *)address++);
+    operation = (operation >> 8) | (operation << 8);
+
+    editor_statusmessage(e, STATUS_INFO, "Operation: %x", operation);
+
+    for (i = 0; direct[i].name; i++) {
+         if (operation == direct[i].code) sprintf(pdpout, "%s", direct[i].name);
+         *lendis = 2;
+         return outbuf;
+    }
+
+    for (i = 0; one[i].name; i++) {
+         if ((operation >> 6) == one[i].code) sprintf(pdpout, "%s ", one[i].name);
+         decodeArgs(pdpout, operation, address);
+         *lendis = (address - start);
+         return outbuf;
+    }
+
+    for (i = 0; two[i]; i++) {
+         if (((operation >> 12) == i) && two[i]) sprintf(pdpout, "%s ", two[i]);
+         decodeArgs(pdpout, operation >> 6, address);
+         sprintf(pdpout+strlen(pdpout), ", ");
+         decodeArgs(pdpout+strlen(pdpout), operation, address);
+         *lendis = (address - start);
+         return outbuf;
+    }
+
     return outbuf;
 }
+
