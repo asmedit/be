@@ -9,72 +9,105 @@
 #include "../../editor.h"
 
 struct Plain { const char* name; unsigned code; };
-struct Immediate { const char* name; unsigned code; short upper; };
+struct Immediate { const char* name; unsigned code; short bits; int mask; int arg; };
 
-char* regs[] = { "r0","r1","r2","r3","r4","r5","sp","pc", 0 };
+char *regs[] = { "r0", "r1", "r2", "r3", "r4", "r5", "sp", "pc", 0 };
+char *fpus[] = { "ac0", "ac1", "ac2", "ac3", "ac4", "ac5", 0 };
 
 struct Plain direct[] = {
-  { .name = "halt", .code = 0 },    { .name = "wait",  .code = 1 },
-  { .name = "rti",  .code = 2 },    { .name = "bpt",   .code = 3 },
-  { .name = "iot",  .code = 4 },    { .name = "reset", .code = 5 },
-  { .name = "rtt",  .code = 6 },    { .name = "nop", .code = 240 },
-  { .name = "clc", .code = 241 },   { .name = "clv", .code = 242 },
-  { .name = "clz", .code = 244 },   { .name = "cln", .code = 250 },
-  { .name = "sec", .code = 261 },   { .name = "sev", .code = 262 },
-  { .name = "sez", .code = 264 },   { .name = "sen", .code = 270 },
-  { .name = "scc", .code = 277 },   { .name = "ccc", .code = 257},
-  { .name = "ret", .code = 207},    { .name = 0, .code = 0 } };
+  { .name = "halt", .code = 0 },     { .name = "wait",  .code = 1 },
+  { .name = "rti",  .code = 2 },     { .name = "bpt",   .code = 3 },
+  { .name = "iot",  .code = 4 },     { .name = "reset", .code = 5 },
+  { .name = "rtt",  .code = 6 },     { .name = "ret",   .code = 0207 },
+  { .name = "nop",  .code = 0240 },  { .name = "clc",   .code = 0241 },
+  { .name = "clv",  .code = 0242 },  { .name = "clz",   .code = 0244 },
+  { .name = "cln",  .code = 0250 },  { .name = "ccc",   .code = 0257 },
+  { .name = "sec",  .code = 0261 },  { .name = "sev",   .code = 0262 },
+  { .name = "sez",  .code = 0264 },  { .name = "sen",   .code = 0270 },
+  { .name = "scc",  .code = 0277 },
+
+  { .name = "cfcc", .code = 0170000 },
+  { .name = 0, .code = 0 } };
 
 struct Plain one[] = {
-  { .name = "jmp", .code = 1 },     { .name = "swab", .code = 3 },
-  { .name = "clr", .code = 50 },    { .name = "clrb", .code = 1050 },
-  { .name = "com", .code = 51 },    { .name = "comb", .code = 1051 },
-  { .name = "inc", .code = 52 },    { .name = "incb", .code = 1052 },
-  { .name = "dec", .code = 53 },    { .name = "decb", .code = 1053 },
-  { .name = "neg", .code = 54 },    { .name = "negb", .code = 1054 },
-  { .name = "adc", .code = 55 },    { .name = "adcb", .code = 1055 },
-  { .name = "sbc", .code = 56 },    { .name = "sbcb", .code = 1056 },
-  { .name = "tst", .code = 57 },    { .name = "tstb", .code = 1057 },
-  { .name = "ror", .code = 60 },    { .name = "rorb", .code = 1060 },
-  { .name = "rol", .code = 61 },    { .name = "rolb", .code = 1061 },
-  { .name = "asr", .code = 62 },    { .name = "asrb", .code = 1062 },
-  { .name = "asl", .code = 63 },    { .name = "aslb", .code = 1063 },
-  { .name = "???", .code = 64 },    { .name = "mtps", .code = 1064 },
-  { .name = "sxt", .code = 67 },    { .name = "mfps", .code = 1067 },
+  { .name = "jmp",  .code = 1 },     { .name = "rts",   .code = 2 },
+  { .name = "swab", .code = 3 },
+  { .name = "clr",  .code = 050 },   { .name = "clrb",  .code = 01050 },
+  { .name = "com",  .code = 051 },   { .name = "comb",  .code = 01051 },
+  { .name = "inc",  .code = 052 },   { .name = "incb",  .code = 01052 },
+  { .name = "dec",  .code = 053 },   { .name = "decb",  .code = 01053 },
+  { .name = "neg",  .code = 054 },   { .name = "negb",  .code = 01054 },
+  { .name = "adc",  .code = 055 },   { .name = "adcb",  .code = 01055 },
+  { .name = "sbc",  .code = 056 },   { .name = "sbcb",  .code = 01056 },
+  { .name = "tst",  .code = 057 },   { .name = "tstb",  .code = 01057 },
+  { .name = "ror",  .code = 060 },   { .name = "rorb",  .code = 01060 },
+  { .name = "rol",  .code = 061 },   { .name = "rolb",  .code = 01061 },
+  { .name = "asr",  .code = 062 },   { .name = "asrb",  .code = 01062 },
+  { .name = "asl",  .code = 063 },   { .name = "aslb",  .code = 01063 },
+                                     { .name = "mtps",  .code = 01064 },
+  { .name = "mfpi", .code = 065 },   { .name = "mfpd",  .code = 01065 },
+  { .name = "mtpi", .code = 066 },   { .name = "mtpd",  .code = 01066 },
+  { .name = "sxt",  .code = 067 },   { .name = "mfps",  .code = 01067 },
+  { .name = "csm",  .code = 070 }, // PDP-11/44
   { .name = 0, .code = 0 } };
 
 struct Plain jmp[] = {
-  { .name = "br",   .code = 04 },   { .name = "bne", .code = 10 },
-  { .name = "beq",  .code = 14 },   { .name = "bge", .code = 20 },
-  { .name = "blt",  .code = 24 },   { .name = "bgt", .code = 30 },
-  { .name = "ble",  .code = 34 },   { .name = "bpl", .code = 1000 },
-  { .name = "bmi",  .code = 1004 }, { .name = "bhi", .code = 1010 },
-  { .name = "bvs",  .code = 1020 }, { .name = "bvc", .code = 1024 },
-  { .name = "bhis", .code = 1030 }, { .name = "bcc", .code = 1030 },
-  { .name = "blo",  .code = 1034 }, { .name = "bcs", .code = 1034 },
-  { .name = "blos", .code = 1014 }, { .name = 0, .code = 0 } };
+  { .name = "br",   .code = 001 },   { .name = "bne", .code = 002 },
+  { .name = "beq",  .code = 003 },   { .name = "bge", .code = 004 },
+  { .name = "blt",  .code = 005 },   { .name = "bgt", .code = 006 },
+  { .name = "ble",  .code = 007 },   { .name = "bpl", .code = 0200 },
+  { .name = "bmi",  .code = 0201 },  { .name = "bhi", .code = 0202 },
+  { .name = "blos", .code = 0203 },  { .name = "bvc", .code = 0204 },
+  { .name = "bvs",  .code = 0205 },  { .name = "bcc", .code = 0206 },
+  { .name = "bcs",  .code = 0207 },  { .name = 0, .code = 0 } };
 
 struct Immediate imm[] = {
-  { .name = "emt", .code = 104000, .upper = 377 },
-  { .name = "trap", .code = 104400, .upper = 377 },
-  { .name = "mark", .code = 6400, .upper = 77 },
-  { .name = 0, .code = 0, .upper = 0 } };
+  { .name = "emt",  .code = 0210, .bits = 8, .mask = 0xFF, .arg = 0 },
+  { .name = "trap", .code = 0211, .bits = 8, .mask = 0xFF, .arg = 0 },
+  { .name = "mark", .code = 064,  .bits = 6, .mask = 0x3F, .arg = 1 },
+  { .name = 0, .code = 0, .bits = 0, .mask = 0, .arg = 0 } };
 
-char* two[] = {
-  "x", "mov",  "cmp",  "bit",  "bic",  "bis",  "add", "y",
-  "z", "movb", "cmpb", "bitb", "bicb", "bisb", "sub", "w", 0 };
+struct Plain one3[] = {
+  { .name = "rts",  .code = 020 },
+  { .name = "fadd", .code = 07500 },
+  { .name = "fsub", .code = 07501 },
+  { .name = "fmul", .code = 07502 },
+  { .name = "fdiv", .code = 07503 },
+  { .name = 0, .code = 0 }
+};
+
+struct Plain sob[] = {
+  { .name = "sob",  .code = 077 },
+  { .name = 0, .code = 0 }
+};
 
 struct Plain xor[] = {
-  { .name = "jsr", .code = 4000 },
-  { .name = "xor", .code = 74000 },
+  { .name = "jsr",  .code = 04  },
+  { .name = "mul",  .code = 070 },
+  { .name = "div",  .code = 071 },
+  { .name = "ash",  .code = 072 },
+  { .name = "ashc", .code = 073 },
+  { .name = "xor",  .code = 074 },
   { .name = 0, .code = 0 } };
 
-char* reg_addr[] = { "%s", "(%s)", "(%s)+", "@(%s)+", "-(%s)", "@-(%s)", "%X(%s)", "@%X(%s)", 0 };
+struct Plain fpu1[] = {
+  { .name = "clrf",     .code = 000 },
+  { .name = 0, .code = 0 } };
+
+struct Plain fpu2[] = {
+  { .name = "",     .code = 000 },
+  { .name = 0, .code = 0 } };
+
+char* two[] = {
+  "", "mov",  "cmp",  "bit",  "bic",  "bis",  "add", "",
+  "", "movb", "cmpb", "bitb", "bicb", "bisb", "sub", "", 0 };
+
+char* reg_addr[] = { "%s", "(%s)", "(%s)+", "@(%s)+", "-(%s)", "@-(%s)", "0x%X(%s)", "@0x%X(%s)", 0 };
 char pdpout[1000];
 
 uint16_t pdp11word(unsigned long int address) {
     uint16_t operation = (uint16_t)*((unsigned long int *)address);
-    operation = (operation << 8) | (operation & 0xFF);
+    operation = (operation << 8) | (operation >> 8);
     return operation;
 }
 
@@ -91,21 +124,42 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          goto end;
     }
 
+
     for (i = 0; one[i].name; i++) if ((operation >> 6) == one[i].code) {
          uint8_t dst_reg = (operation >> 0) & 7;
          uint8_t dst_mod = (operation >> 3) & 7;
          sprintf(pdpout, "%s ", one[i].name);
+         if (dst_mod < 6) sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
+         else { sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], pdp11word(finish), regs[dst_reg]); finish += 2; }
+         goto end;
+    }
+
+    for (i = 0; one3[i].name; i++) if ((operation >> 3) == one3[i].code) {
+         uint8_t dst_reg = (operation >> 0) & 7;
+         uint8_t dst_mod = (operation >> 3) & 7;
+         sprintf(pdpout, "%s ", one3[i].name);
          sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
          goto end;
     }
 
-    for (i = 0; jmp[i].name; i++) if ((operation >> 8) == (jmp[i].code >> 2)) {
-         sprintf(pdpout, "%s 0x%x", jmp[i].name, ((operation & 0x80) ? (operation | ~0xFF) : (operation & 0xFF)) * 2 + 0 + 2);
+    for (i = 0; jmp[i].name; i++) if ((operation >> 8) == jmp[i].code) {
+         sprintf(pdpout, "%s 0x%x", jmp[i].name, (operation & 0xFF) * 2 + 2);
          goto end;
     }
 
-    for (i = 0; imm[i].name; i++) if ((operation & ~imm[i].upper) == imm[i].code) {
-         sprintf(pdpout, "%s %u.", imm[i].name, operation & imm[i].upper);
+    for (i = 0; sob[i].name; i++) if ((operation >> 9) == sob[i].code) {
+         uint8_t reg = (operation >> 6) & 7;
+         uint8_t offset = operation & 0x3F;
+         sprintf(pdpout, "%s %s, 0x%x", sob[i].name, regs[reg], offset);
+         goto end;
+    }
+
+    for (i = 0; xor[i].name; i++) if ((operation >> 9) == xor[i].code) {
+         uint8_t dst_reg = (operation >> 0) & 7;
+         uint8_t dst_mod = (operation >> 3) & 7;
+         sprintf(pdpout, "%s %s, ", xor[i].name, regs[(operation >> 6) & 7]);
+         if (dst_mod < 6) sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
+         else { sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], pdp11word(finish), regs[dst_reg]); finish += 2; }
          goto end;
     }
 
@@ -123,11 +177,8 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          goto end;
     }
 
-    for (i = 0; xor[i].name; i++) if ((operation & 777000) == xor[i].code) {
-         uint8_t dst_reg = (operation >> 0) & 7;
-         uint8_t dst_mod = (operation >> 3) & 7;
-         sprintf(pdpout, "%s %s, ", xor[i].name, regs[(operation >> 6) & 7]);
-         sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
+    for (i = 0; imm[i].name; i++) if ((operation >> imm[i].bits) == imm[i].code) {
+         sprintf(pdpout, "%s %u.", imm[i].name, operation & imm[i].mask);
          goto end;
     }
 
