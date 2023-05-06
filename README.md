@@ -22,7 +22,7 @@ Architectures
 * MIPS: R4300 (Nintendo 64)
 * SuperH: SH-4 (Sega Dreamcast)
 * M68K: M68000 (Motorola CD-920)
-* PDP-11: (DEC PDP-11/70)
+* PDP-11: EIS, FIS, CIS (DEC PDP-11/70)
 
 <img width="796" alt="ASM" src="https://user-images.githubusercontent.com/144776/172079654-9380b592-ff6d-4f51-b0b4-9837ddc376ab.png">
 <img width="796" alt="HEX" src="https://user-images.githubusercontent.com/144776/172079707-34d042b1-c2a8-49ed-88b0-3e21d7569106.png">
