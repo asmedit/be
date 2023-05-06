@@ -121,8 +121,8 @@ struct Plain fpu2[] = {
   { .name = 0, .code = 0 } };
 
 char* two[] = {
-  "", "mov",  "cmp",  "bit",  "bic",  "bis",  "add", "",
-  "", "movb", "cmpb", "bitb", "bicb", "bisb", "sub", "", 0 };
+  0, "mov",  "cmp",  "bit",  "bic",  "bis",  "add", 0,
+  0, "movb", "cmpb", "bitb", "bicb", "bisb", "sub", 0, 0 };
 
 char* reg_addr[] = { "%s", "(%s)", "(%s)+", "@(%s)+", "-(%s)", "@-(%s)", "0x%X(%s)", "@0x%X(%s)", 0 };
 char pdpout[1000];
@@ -208,7 +208,7 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          goto end;
     }
 
-    for (i = 0; two[i]; i++) if ((operation >> 12) == i) {
+    for (i = 0; i < 16; i++) if ((operation >> 12) == i && two[i]) {
          uint8_t dst_reg = (operation >> 0) & 7;
          uint8_t dst_mod = (operation >> 3) & 7;
          uint8_t src_reg = (operation >> 6) & 7;
@@ -222,7 +222,7 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          goto end;
     }
 
-    sprintf(pdpout, ".word 0x%x", operation);
+    sprintf(pdpout, ".word 0x%04X", (unsigned int)operation);
 
 end:
     memcpy(outbuf,pdpout,strlen(pdpout));
