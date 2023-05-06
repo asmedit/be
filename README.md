@@ -35,5 +35,5 @@ Credits
 * Michael Clark, <a href="https://github.com/michaeljclark/riscv-disassembler">riscv-disassembler</a>
 * Frank Wille, <a href="https://github.com/BullyWiiPlaza/vdappc">vdappc</a>
 * NASM Authors, <a href="https://github.com/netwide-assembler/nasm">nasm</a>
-* Snickerbockers <a href="https://github.com/washingtondc-emu/sh4asm">sh4asm</a>
+* Snickerbockers, <a href="https://github.com/washingtondc-emu/sh4asm">sh4asm</a>
 * Kevin Pors, <a href="https://github.com/krpors/hx">hx</a>
