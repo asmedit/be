@@ -30,10 +30,11 @@ Architectures
 Credits
 -------
 
-* Namdak Tonpa, <a href="https://github.com/asmedit/dasm-pdp11">dasm-pdp11</a>, <a href="https://github.com/asmedit/dasm-mips">dasm-mips</a> 
-* Justin Sherman, <a href="https://github.com/jsherman212/armadillo">armadillo</a>
-* Michael Clark, <a href="https://github.com/michaeljclark/riscv-disassembler">riscv-disassembler</a>
-* Frank Wille, <a href="https://github.com/BullyWiiPlaza/vdappc">vdappc</a>
-* NASM Authors, <a href="https://github.com/netwide-assembler/nasm">nasm</a>
-* Snickerbockers, <a href="https://github.com/washingtondc-emu/sh4asm">sh4asm</a>
 * Kevin Pors, <a href="https://github.com/krpors/hx">hx</a>
+* Wouter de Waal, <a href="https://github.com/TomHarte/dis68k">dis68k</a>
+* Snickerbockers, <a href="https://github.com/washingtondc-emu/sh4asm">sh4asm</a>
+* Frank Wille, <a href="https://github.com/BullyWiiPlaza/vdappc">vdappc</a>
+* Michael Clark, <a href="https://github.com/michaeljclark/riscv-disassembler">riscv-disassembler</a>
+* Justin Sherman, <a href="https://github.com/jsherman212/armadillo">armadillo</a>
+* NASM Authors, <a href="https://github.com/netwide-assembler/nasm">nasm</a>
+* Namdak Tonpa, <a href="https://github.com/asmedit/dasm-pdp11">dasm-pdp11</a>, <a href="https://github.com/asmedit/dasm-mips">dasm-mips</a> 
