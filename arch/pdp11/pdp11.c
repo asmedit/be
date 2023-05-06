@@ -12,7 +12,7 @@ struct Plain { const char* name; unsigned code; };
 struct Immediate { const char* name; unsigned code; short bits; int mask; int arg; };
 
 char *regs[] = { "r0", "r1", "r2", "r3", "r4", "r5", "sp", "pc", 0 };
-char *fpus[] = { "ac0", "ac1", "ac2", "ac3", "ac4", "ac5", 0 };
+char *fpus[] = { "ac0", "ac1", "ac2", "ac3", "ac4", "ac5", "ac6", "ac7", 0 };
 
 struct Plain direct[] = {
   { .name = "halt", .code = 0 },     { .name = "wait",  .code = 1 },
@@ -203,6 +203,10 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          goto end;
     }
 
+    for (i = 0; imm[i].name; i++) if ((operation >> imm[i].bits) == imm[i].code) {
+         sprintf(pdpout, "%s %u.", imm[i].name, operation & imm[i].mask);
+         goto end;
+    }
 
     for (i = 0; two[i]; i++) if ((operation >> 12) == i) {
          uint8_t dst_reg = (operation >> 0) & 7;
@@ -215,11 +219,6 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          sprintf(pdpout+strlen(pdpout), ", ");
          if (dst_mod < 6) sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
          else { sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], pdp11word(finish), regs[dst_reg]); finish += 2; }
-         goto end;
-    }
-
-    for (i = 0; imm[i].name; i++) if ((operation >> imm[i].bits) == imm[i].code) {
-         sprintf(pdpout, "%s %u.", imm[i].name, operation & imm[i].mask);
          goto end;
     }
 
