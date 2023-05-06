@@ -1,7 +1,7 @@
 Binary Editor
 =============
 
-InfoSec Binary Hex Editor with Disassemblers.
+InfoSec Binary Hex Editor with Retro Disassemblers.
 
 Features
 --------
