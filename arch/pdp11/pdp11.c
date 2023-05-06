@@ -27,6 +27,10 @@ struct Plain direct[] = {
   { .name = "scc",  .code = 0277 },
 
   { .name = "cfcc", .code = 0170000 },
+  { .name = "setf", .code = 0170001 },
+  { .name = "seti", .code = 0170002 },
+  { .name = "setd", .code = 0170011 },
+  { .name = "setl", .code = 0170012 },
   { .name = 0, .code = 0 } };
 
 struct Plain one[] = {
@@ -91,11 +95,29 @@ struct Plain xor[] = {
   { .name = 0, .code = 0 } };
 
 struct Plain fpu1[] = {
-  { .name = "clrf",     .code = 000 },
+  { .name = "ldfps",  .code = 01701 },
+  { .name = "stfps",  .code = 01702 },
+  { .name = "stst",   .code = 01703 },
+  { .name = "clrf",   .code = 01704 },
+  { .name = "tstf",   .code = 01705 },
+  { .name = "absf",   .code = 01706 },
+  { .name = "negf",   .code = 01707 },
   { .name = 0, .code = 0 } };
 
 struct Plain fpu2[] = {
-  { .name = "",     .code = 000 },
+  { .name = "mulf",   .code = 0xF2 },
+  { .name = "modf",   .code = 0xF3 },
+  { .name = "addf",   .code = 0xF4 },
+  { .name = "ldf",    .code = 0xF5 },
+  { .name = "subf",   .code = 0xF6 },
+  { .name = "cmpf",   .code = 0xF7 },
+  { .name = "divf",   .code = 0xF9 },
+  { .name = "stexp",  .code = 0xFA },
+  { .name = "stcfi",  .code = 0xFB },
+  { .name = "stcfd",  .code = 0xFC },
+  { .name = "ldexp",  .code = 0xFD },
+  { .name = "ldcif",  .code = 0xFE },
+  { .name = "ldcdf",  .code = 0xFF },
   { .name = 0, .code = 0 } };
 
 char* two[] = {
@@ -124,6 +146,13 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          goto end;
     }
 
+    for (i = 0; one3[i].name; i++) if ((operation >> 3) == one3[i].code) {
+         uint8_t dst_reg = (operation >> 0) & 7;
+         uint8_t dst_mod = (operation >> 3) & 7;
+         sprintf(pdpout, "%s ", one3[i].name);
+         sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
+         goto end;
+    }
 
     for (i = 0; one[i].name; i++) if ((operation >> 6) == one[i].code) {
          uint8_t dst_reg = (operation >> 0) & 7;
@@ -134,11 +163,22 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          goto end;
     }
 
-    for (i = 0; one3[i].name; i++) if ((operation >> 3) == one3[i].code) {
+    for (i = 0; fpu1[i].name; i++) if ((operation >> 6) == fpu1[i].code) {
          uint8_t dst_reg = (operation >> 0) & 7;
          uint8_t dst_mod = (operation >> 3) & 7;
-         sprintf(pdpout, "%s ", one3[i].name);
-         sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], regs[dst_reg]);
+         sprintf(pdpout, "%s ", fpu1[i].name);
+         if (dst_mod < 6) sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], fpus[dst_reg]);
+         else { sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], pdp11word(finish), fpus[dst_reg]); finish += 2; }
+         goto end;
+    }
+
+    for (i = 0; fpu2[i].name; i++) if ((operation >> 8) == fpu2[i].code) {
+         uint8_t dst_reg = (operation >> 0) & 7;
+         uint8_t dst_mod = (operation >> 3) & 7;
+         uint8_t ac      = (operation >> 6) & 3;
+         sprintf(pdpout, "%s %s, ", fpu2[i].name, fpus[ac]);
+         if (dst_mod < 6) sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], fpus[dst_reg]);
+         else { sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], pdp11word(finish), fpus[dst_reg]); finish += 2; }
          goto end;
     }
 
@@ -162,6 +202,7 @@ char * decodePDP11(unsigned long int address, char *outbuf, int *lendis)
          else { sprintf(pdpout+strlen(pdpout), reg_addr[dst_mod], pdp11word(finish), regs[dst_reg]); finish += 2; }
          goto end;
     }
+
 
     for (i = 0; two[i]; i++) if ((operation >> 12) == i) {
          uint8_t dst_reg = (operation >> 0) & 7;
