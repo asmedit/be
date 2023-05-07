@@ -1,61 +1,38 @@
 // Copyright (c) Namdak Tonpa
-// MIPS-IV DASM 300 LOC
+// MIPS-IV DASM 200 LOC
 
 #include <stdint.h>
 #include <stdio.h>
 
-static char * gpr[] =  {
-     "r0", "at", "v0", "v1", "a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
-     "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "t8", "t9", "k0", "k1", "gp", "sp", "s8", "ra" };
+// regs
 
-static char * cp0[] =  {
-     "sp_mem_addr", "sp_dram_addr", "sp_rd_len",    "sp_wr_len", "sp_status",   "sp_dma_full",  "sp_dma_busy",  "sp_semaphore",
-     "dpc_start",   "dpc_end",      "dpc_current",  "dpc_status", "dpc_clock",   "dpc_bufbusy",  "dpc_pipebusy", "dpc_tmem" };
+char * rsp_lost[] = { "b", "s", "l", "d", "q", "r", "p", "u", "h", "f", "w", "t" };
+char * gpr[] =  {  "r0", "at", "v0", "v1", "a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
+                   "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "t8", "t9", "k0", "k1", "gp", "sp", "s8", "ra" };
+char * cp0[] =  {  "sp_mem_addr", "sp_dram_addr", "sp_rd_len",    "sp_wr_len", "sp_status",   "sp_dma_full",  "sp_dma_busy",  "sp_semaphore",
+                   "dpc_start",   "dpc_end",      "dpc_current",  "dpc_status", "dpc_clock",   "dpc_bufbusy",  "dpc_pipebusy", "dpc_tmem" };
 
-char * rsp[] = {
-    "special", "regimm", "j", "jal", "beq", "bne", "blez", "bgtz", "addi", "addiu", "slti", "sltiu", "andi", "ori", "xori", "lui",
-    "cop0", "cop1", "cop2", "cop3", "beql", "bnel", "blezl", "bgtz", "daddi", "daddiu", "ldl", "ldr", 0, 0, 0, 0,
-    "lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu", "sb", "sh", "swl", "sw", "sdl", "sdr", "swr", 0,
-    "ll", "lwc1", "lwc2", "pref", "lld", "ldc1", "ldc2", "ld", "sc", "swc1", "swc2", 0, "scd", "sdc1", "sdc2", "sd" };
+// opcodes
 
-char *specials[] = {
-     "sll", "movci", "slr", "sra", "sllv", 0, "srlv", "srav", "jr", "jalr", "movz", "movn", "syscall", "break", 0, "sync",
-     "mfhi", "mthi", "mflo", "mtlo", "dsllv", 0, "dsrlv", "dsrav", "mult", "multu", "div", "divu", "dmult", "dmultu", "ddiv", "ddivu",
-     "add", "addu", "sub", "subu", "and", "or", "xor", "nor", 0, 0, "slt", "sltu", "dadd", "daddu", "dsub", "dsubu",
-     "tge", "tgeu", "tlt", "tltu", "teq", 0, "tne", 0, "dsll", 0, "dsrl", "dsra", "dsll32", 0, "dsrl32", "dsra32", 0 };
+char * rsp[] = {   "special", "regimm", "j", "jal", "beq", "bne", "blez", "bgtz", "addi", "addiu", "slti", "sltiu", "andi", "ori", "xori", "lui",
+                   "cop0", "cop1", "cop2", "cop3", "beql", "bnel", "blezl", "bgtz", "daddi", "daddiu", "ldl", "ldr", 0, 0, 0, 0,
+                   "lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu", "sb", "sh", "swl", "sw", "sdl", "sdr", "swr", 0,
+                   "ll", "lwc1", "lwc2", "pref", "lld", "ldc1", "ldc2", "ld", "sc", "swc1", "swc2", 0, "scd", "sdc1", "sdc2", "sd" };
+char *specials[] = { "sll", "movci", "slr", "sra", "sllv", 0, "srlv", "srav", "jr", "jalr", "movz", "movn", "syscall", "break", 0, "sync",
+                     "mfhi", "mthi", "mflo", "mtlo", "dsllv", 0, "dsrlv", "dsrav", "mult", "multu", "div", "divu", "dmult", "dmultu", "ddiv", "ddivu",
+                     "add", "addu", "sub", "subu", "and", "or", "xor", "nor", 0, 0, "slt", "sltu", "dadd", "daddu", "dsub", "dsubu",
+                     "tge", "tgeu", "tlt", "tltu", "teq", 0, "tne", 0, "dsll", 0, "dsrl", "dsra", "dsll32", 0, "dsrl32", "dsra32", 0 };
+char *regimm[] = { "bltz", "bgez", "bltzl", "bgezl", 0, 0, 0, 0, "tgei", "tgeiu", "tlti", "tltiu", "teqi", 0, "tnei", 0,
+                   "bltzal", "bgezal", "bltzall", "bgezall", 0 };
+char * rsp_vec[] = { "vmulf", "vmulu", "vrndp", "vmulq", "vmudl", "vmudm", "vmudn", "vmudh",
+                     "vmacf", "vmacu", "vrndn", "vmacq", "vmadl", "vmadm", "vmadn", "vmadh",
+                     "vadd", "vsub", 0, "vabs", "vaddc", "vsubc", 0, 0, 0, 0, 0, 0, 0, "vsar", 0, 0,
+                     "vlt", "veq", "vne", "vge", "vcl", "vch", "vcr", "vmrg",
+                     "vand", "vnand", "vor", "vnor", "vxor", "vnxor", 0, 0,
+                     "vcrp", "vrcpl", "vrcph", "vmov", "vrsq", "vrsql", "vrsqh", "vnop" };
 
-char *regimm[] = {
-     "bltz", "bgez", "bltzl", "bgezl", 0, 0, 0, 0, "tgei", "tgeiu", "tlti", "tltiu", "teqi", 0, "tnei", 0,
-     "bltzal", "bgezal", "bltzall", "bgezall", 0 };
-
-static char * rsp_vec[] =   {
-    "vmulf", "vmulu", "vrndp", "vmulq", "vmudl", "vmudm", "vmudn", "vmudh",
-    "vmacf", "vmacu", "vrndn", "vmacq", "vmadl", "vmadm", "vmadn", "vmadh",
-    "vadd", "vsub", 0, "vabs", "vaddc", "vsubc", 0, 0, 0, 0, 0, 0, 0, "vsar", 0, 0,
-    "vlt", "veq", "vne", "vge", "vcl", "vch", "vcr", "vmrg",
-    "vand", "vnand", "vor", "vnor", "vxor", "vnxor", 0, 0,
-    "vcrp", "vrcpl", "vrcph", "vmov", "vrsq", "vrsql", "vrsqh", "vnop" };
-
-static char * rsp_lost[] = { "b", "s", "l", "d", "q", "r", "p", "u", "h", "f", "w", "t" };
-
-static int usingLongForm = 1;
-static int usingArmipsCP0Names = 1;
-
-static char str_opcode[256];
-static char str_bo[256];
-static char str_beqo[256];
-static char str_lost[256];
-static char str_vec_elem[256];
-static char str_vec[256];
-static char str_vecop[256];
-static char str_cop0[256];
-static char str_cop2[256];
-static char str_mc[256];
-static char str_reg[256];
-static char unknown[256];
-
-char *getRPRegName(uint8_t reg) { return gpr[reg]; }
-char *getCP0RegName(uint8_t reg) { return cp0[reg]; }
+char str_opcode[256], str_bo[256], str_beqo[256], str_lost[256], str_vec_elem[256], str_vec[256], str_vecop[256], str_cop0[256];
+char str_cop2[256], str_mc[256], str_reg[256], unknown[256];
 
 char *decodeVectorElement(uint8_t v, uint8_t e)
 {
@@ -96,7 +73,7 @@ char *decodeMoveControlToFromCoprocessor(char *opcode, uint32_t operation)
 {
     uint8_t rt = (uint8_t)((operation >> 16) & 0x1F);
     uint8_t rd = (uint8_t)((operation >> 11) & 0x1F);
-    sprintf(str_mc, "%s %s, $v%i", opcode, getRPRegName(rt), rd);
+    sprintf(str_mc, "%s %s, $v%i", opcode, gpr[rt], rd);
     return str_mc;
 }
 
@@ -105,7 +82,7 @@ char * decodeMoveToFromCoprocessor(char *opcode, uint32_t operation)
     uint8_t rt = (uint8_t)((operation >> 16) & 0x1F);
     uint8_t rd = (uint8_t)((operation >> 11) & 0x1F);
     uint8_t e  = (uint8_t)((operation >> 7) & 0xF);
-    sprintf(str_mc, "%s %s, $v%i[%i]", opcode, getRPRegName(rt), rd, e);
+    sprintf(str_mc, "%s %s, $v%i[%i]", opcode, gpr[rt], rd, e);
     return str_mc;
 }
 
@@ -114,8 +91,8 @@ char *decodeCOP0(uint32_t operation) {
      uint8_t rt = (uint8_t)((operation >> 16) & 0x1F);
      uint8_t rd = (uint8_t)((operation >> 11) & 0x1F);
      switch (mt) {
-         case 0x00: sprintf(str_cop0, "mfc0 %s, %s", getRPRegName(rt), getCP0RegName(rd)); break;
-         case 0x04: sprintf(str_cop0, "mtc0 %s, %s", getRPRegName(rt), getCP0RegName(rd)); break;
+         case 0x00: sprintf(str_cop0, "mfc0 %s, %s", gpr[rt], cp0[rd]); break;
+         case 0x04: sprintf(str_cop0, "mtc0 %s, %s", gpr[rt], cp0[rd]); break;
          default:   sprintf(str_cop0, "Unknown COP0 opcode: 0x%x", mt); break;
      }
 
@@ -139,11 +116,11 @@ char * decodeLoadStore(uint16_t operation, char *LorS)
 {
     uint8_t ls_subop = (uint8_t)((operation >> 11) & 0x1F);
     sprintf(str_lost,"%s%sv", LorS, rsp_lost[ls_subop]);
-    uint8_t base_ = (uint8_t)((operation >> 21) & 0x1F);
-    uint8_t dest = (uint8_t)((operation >> 16) & 0x1F);
+    uint8_t src = (uint8_t)((operation >> 21) & 0x1F);
+    uint8_t dst = (uint8_t)((operation >> 16) & 0x1F);
     uint8_t del = (uint8_t)((operation >> 7) & 0xF);
     uint16_t offset = (uint16_t)((operation & 0x3F) << 2);
-    sprintf(str_lost,"%s%sv $v%i[%d], 0x%4x(%s)", LorS, rsp_lost[ls_subop], dest, del, offset, getRPRegName(base_));
+    sprintf(str_lost,"%s%sv $v%i[%d], 0x%4x(%s)", LorS, rsp_lost[ls_subop], dst, del, offset, gpr[src]);
     return str_lost;
 }
 
@@ -152,8 +129,8 @@ char *decodeNormalLoadStore(char *opcode, uint32_t operation)
      uint8_t dst = (uint8_t)((operation >> 16) & 0x1F);
      uint8_t src = (uint8_t)((operation >> 21) & 0x1F);
      uint16_t imm = (uint16_t)(operation & 0xFFFF);
-     if (imm < 0) sprintf(str_lost,"%s %s, -0x%x(%s)", opcode, getRPRegName(dst), imm, getRPRegName(src));
-             else sprintf(str_lost,"%s %s, 0x%x(%s)", opcode, getRPRegName(dst), imm, getRPRegName(src));
+     if (imm < 0) sprintf(str_lost,"%s %s, -0x%x(%s)", opcode, gpr[dst], imm, gpr[src]);
+             else sprintf(str_lost,"%s %s, 0x%x(%s)", opcode, gpr[dst], imm, gpr[src]);
      return str_lost;
 }
 
@@ -162,15 +139,15 @@ char *decodeTwoRegistersWithImmediate(char *opcode, uint32_t operation)
      uint8_t dst = (uint8_t)((operation >> 16) & 0x1F);
      uint8_t src = (uint8_t)((operation >> 21) & 0x1F);
      uint16_t imm = (uint16_t)(operation & 0xFFFF);
-     if (imm < 0) sprintf(str_lost,"%s %s, %s, 0x%x", opcode, getRPRegName(dst), getRPRegName(src), imm);
-             else sprintf(str_lost,"%s %s, %s, 0x%x", opcode, getRPRegName(dst), getRPRegName(src), imm);
+     if (imm < 0) sprintf(str_lost,"%s %s, %s, 0x%x", opcode, gpr[dst], gpr[src], imm);
+             else sprintf(str_lost,"%s %s, %s, 0x%x", opcode, gpr[dst], gpr[src], imm);
      return str_lost;
 }
 
 char *decodeOneRegisterWithImmediate(char *opcode, uint32_t operation)
 {
      uint8_t dst = (uint8_t)((operation >> 16) & 0x1F);
-     sprintf(str_reg, "%s %s, 0x%x", opcode, getRPRegName(dst), operation & 0xFFFF);
+     sprintf(str_reg, "%s %s, 0x%x", opcode, gpr[dst], operation & 0xFFFF);
      return str_reg;
 }
 
@@ -179,8 +156,8 @@ char *decodeThreeRegister(char* opcode, uint32_t operation, int swapRT_RS)
      uint8_t dest = (uint8_t)((operation >> 11) & 0x1F);
      uint8_t src1 = (uint8_t)((operation >> 21) & 0x1F);
      uint8_t src2 = (uint8_t)((operation >> 16) & 0x1F);
-     if(!swapRT_RS) sprintf(str_reg,"%s %s, %s, %s", opcode, getRPRegName(dest), getRPRegName(src1), getRPRegName(src2));
-     else sprintf(str_reg,"%s %s, %s, %s", opcode, getRPRegName(dest), getRPRegName(src2), getRPRegName(src1));
+     if(!swapRT_RS) sprintf(str_reg,"%s %s, %s, %s", opcode, gpr[dest], gpr[src1], gpr[src2]);
+     else sprintf(str_reg,"%s %s, %s, %s", opcode, gpr[dest], gpr[src2], gpr[src1]);
      return str_reg;
 }
 char * decodeBranch(char *opcode, uint32_t operation, unsigned long int address)
@@ -188,7 +165,7 @@ char * decodeBranch(char *opcode, uint32_t operation, unsigned long int address)
      uint8_t src = (uint8_t)((operation >> 21) & 0x1F);
      uint16_t imm = (uint16_t)((operation & 0xFFFF) << 2);
      uint32_t current_offset = (uint32_t)((address + 4) + imm);
-     sprintf(str_bo, "%s %s, 0x%8x", opcode, getRPRegName(src), current_offset);
+     sprintf(str_bo, "%s %s, 0x%8x", opcode, gpr[src], current_offset);
      return str_bo;
 }
 
@@ -198,7 +175,7 @@ char * decodeBranchEquals(char * opcode, uint32_t operation, unsigned long int a
      uint8_t src2 = (uint8_t)((operation >> 16) & 0x1F);
      uint16_t imm = (uint16_t)((operation & 0xFFFF) << 2);
      uint32_t current_offset = (uint32_t)((address + 4) + imm);
-     sprintf(str_beqo, "%s %s, %s, 0x%8x", opcode, getRPRegName(src1), getRPRegName(src2), current_offset);
+     sprintf(str_beqo, "%s %s, %s, 0x%8x", opcode, gpr[src1], gpr[src2], current_offset);
      return str_beqo;
 }
 
@@ -207,7 +184,7 @@ char *decodeSpecialShift(char *opcode, uint32_t operation)
      uint8_t dest = (uint8_t)((operation >> 11) & 0x1F);
      uint8_t src  = (uint8_t)((operation >> 16) & 0x1F);
      int imm = (int)((operation >> 6) & 0x1F);
-     sprintf(str_lost, "%s %s, %s, %i", opcode, getRPRegName(dest), getRPRegName(src), imm);
+     sprintf(str_lost, "%s %s, %s, %i", opcode, gpr[dest], gpr[src], imm);
      return str_lost;
 }
 
@@ -226,11 +203,11 @@ char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis)
         uint8_t function = (uint8_t)(operation & 0x3F);
         if (function < 0x04) sprintf(outbuf, "%s", decodeSpecialShift(specials[function], operation));
         else if (function < 0x08) sprintf(outbuf, "%s", decodeThreeRegister(specials[function], operation, 1));
-        else if (function == 0x08) sprintf(outbuf, "%s %s", specials[function], getRPRegName(reg));
+        else if (function == 0x08) sprintf(outbuf, "%s %s", specials[function], gpr[reg]);
         else if (function == 0x09) {
              uint8_t return_reg = (uint8_t)((operation >> 11) & 0x1F);
-             if (return_reg == 0xF) sprintf(outbuf, "%s %s", specials[function], getRPRegName(reg));
-             else sprintf(outbuf, "%s %s, %s", specials[function], getRPRegName(return_reg), getRPRegName(reg));
+             if (return_reg == 0xF) sprintf(outbuf, "%s %s", specials[function], gpr[reg]);
+             else sprintf(outbuf, "%s %s, %s", specials[function], gpr[return_reg], gpr[reg]);
         } else if (function < 0x20) sprintf(outbuf, "%s %i", specials[function], ((operation >> 6) & 0xFFFFF));
         else if (function < 0x40) sprintf(outbuf, "%s", decodeThreeRegister(specials[function], operation, 0));
         else sprintf(outbuf,"Unknown SPECIAL opcode: 0x%x function: 0x%x", opcode, function);
