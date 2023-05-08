@@ -2272,7 +2272,7 @@ rv_isa bitness(struct editor* e)
 
 static rv_inst rvinst = 0;
 
-char *decodeRISCV(unsigned long int address, char *outbuf, int *lendis) {
+char *decodeRISCV(unsigned long int address, char *outbuf, int *lendis, unsigned long int offset0) {
      struct editor *e = editor();
      *lendis = 0;
      inst_fetch((uint8_t *)address, &rvinst, lendis);

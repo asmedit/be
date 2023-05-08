@@ -49,6 +49,6 @@ int32_t disasm(uint8_t *data, int32_t data_size, char *output, int outbufsize, i
                int64_t offset, int autosync, iflag_t *prefer);
 int32_t eatbyte(uint8_t *data, char *output, int outbufsize, int segsize);
 
-char * decodeEM64T(unsigned long int start, char *outbuf, int *lendis);
+char * decodeEM64T(unsigned long int start, char *outbuf, int *lendis, unsigned long int offset0);
 
 #endif

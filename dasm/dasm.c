@@ -96,18 +96,18 @@ int offset_at_cursor_dasm(struct editor* e) {
     return offset;
 }
 
-char *decode(unsigned long int start, char *outbuf, int *lendis)
+char *decode(unsigned long int start, char *outbuf, int *lendis, unsigned long int offset)
 {
     struct editor *e = editor();
     switch (e->arch) {
-         case ARCH_INTEL: decodeEM64T (start, outbuf, lendis); break;
-         case ARCH_ARM:   decodeARM   (start, outbuf, lendis); break;
-         case ARCH_PPC:   decodePPC   (start, outbuf, lendis); break;
-         case ARCH_RISCV: decodeRISCV (start, outbuf, lendis); break;
-         case ARCH_SH4:   decodeSH4   (start, outbuf, lendis); break;
-         case ARCH_M68K:  decodeM68K  (start, outbuf, lendis); break;
-         case ARCH_MIPS:  decodeMIPS  (start, outbuf, lendis); break;
-         case ARCH_PDP11: decodePDP11 (start, outbuf, lendis); break;
+         case ARCH_INTEL: decodeEM64T (start, outbuf, lendis, offset); break;
+         case ARCH_ARM:   decodeARM   (start, outbuf, lendis, offset); break;
+         case ARCH_PPC:   decodePPC   (start, outbuf, lendis, offset); break;
+         case ARCH_RISCV: decodeRISCV (start, outbuf, lendis, offset); break;
+         case ARCH_SH4:   decodeSH4   (start, outbuf, lendis, offset); break;
+         case ARCH_M68K:  decodeM68K  (start, outbuf, lendis, offset); break;
+         case ARCH_MIPS:  decodeMIPS  (start, outbuf, lendis, offset); break;
+         case ARCH_PDP11: decodePDP11 (start, outbuf, lendis, offset); break;
          default: break;
      }
      return outbuf;
@@ -117,13 +117,12 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
 {
     int lendis=0;
     unsigned long int offset=0;
-    char outbuf[2048], *p, *q;
+    char outbuf[2048], *q;
     offset = e->offset_dasm;
     q = &e->contents[offset];
-    p = &e->contents[0] + e->content_length;
     for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length)
     {
-        decode(q, outbuf, &lendis);
+        decode(q, outbuf, &lendis, offset);
         setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
         q += lendis;
         offset += lendis;

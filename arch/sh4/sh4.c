@@ -13,7 +13,7 @@ static void neo_asm_emit(char ch) {
         sh4asm_disas[sh4asm_disas_len++] = ch;
 }
 
-char * decodeSH4(unsigned long int address, char *outbuf, int *lendis)
+char * decodeSH4(unsigned long int address, char *outbuf, int *lendis, unsigned long int offset0)
 {
      uint16_t inst16 = (uint16_t)*((unsigned long int *)address);
      memset(sh4_buf, 0, sizeof(sh4_buf));

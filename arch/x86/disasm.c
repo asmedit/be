@@ -1762,7 +1762,7 @@ int32_t eatbyte(uint8_t *data, char *output, int outbufsize, int segsize)
 }
 
 
-char * decodeEM64T(unsigned long int start, char *outbuf, int *lendis)
+char * decodeEM64T(unsigned long int start, char *outbuf, int *lendis, unsigned long int offset0)
 {
     uint32_t nextsync, synclen, initskip = 0L;
     bool autosync = false;

@@ -175,7 +175,7 @@ char * decodeBranchEquals(char * opcode, uint32_t operation, unsigned long int a
      uint8_t src2 = (uint8_t)((operation >> 16) & 0x1F);
      uint16_t imm = (uint16_t)((operation & 0xFFFF) << 2);
      uint32_t current_offset = (uint32_t)((address + 4) + imm);
-     sprintf(str_beqo, "%s %s, %s, 0x%8x", opcode, gpr[src1], gpr[src2], current_offset);
+     sprintf(str_beqo, "%s %s, %s, 0x%08x", opcode, gpr[src1], gpr[src2], current_offset);
      return str_beqo;
 }
 
@@ -193,9 +193,9 @@ uint32_t le_to_be(uint32_t num) {
     b[0] = b[3]; b[3] = tmp; tmp = b[1]; b[1] = b[2]; b[2] = tmp; return *(uint32_t*)b;
 }
 
-char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis)
+char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned long int offset)
 {
-    uint32_t operation = le_to_be( (uint32_t)*((unsigned long int *)address));
+    uint32_t operation = le_to_be((uint32_t)*((unsigned long int *)address));
     if (operation == 0x00000000) { sprintf(outbuf, "%s", "nop"); return outbuf; }
     uint8_t reg = (uint8_t)((operation >> 21) & 0x1F);
     uint8_t opcode = (uint8_t)((operation >> 26) & 0x3F);
@@ -213,11 +213,11 @@ char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis)
         else sprintf(outbuf,"Unknown SPECIAL opcode: 0x%x function: 0x%x", opcode, function);
     } else if (opcode == 0x01) {
         uint8_t rt = (uint8_t)((operation >> 16) & 0x1F);
-        if (rt < 0x14) sprintf(outbuf, "%s", decodeBranch(regimm[rt], operation, address));
+        if (rt < 0x14) sprintf(outbuf, "%s", decodeBranch(regimm[rt], operation, offset));
         else sprintf(outbuf,"Unknown REGIMM opcode: 0x%x rt: 0x%x", opcode, rt);
     } else if (opcode  < 0x04) sprintf(outbuf, "%s 0x0%x", rsp[opcode], ((operation & 0x03FFFFFF) << 2));
-    else if (opcode  < 0x06) sprintf(outbuf, "%s", decodeBranchEquals(rsp[opcode], operation, address));
-    else if (opcode  < 0x08) sprintf(outbuf, "%s", decodeBranch(rsp[opcode], operation, address));
+    else if (opcode  < 0x06) sprintf(outbuf, "%s", decodeBranchEquals(rsp[opcode], operation, offset));
+    else if (opcode  < 0x08) sprintf(outbuf, "%s", decodeBranch(rsp[opcode], operation, offset));
     else if (opcode  < 0x0F) sprintf(outbuf, "%s", decodeTwoRegistersWithImmediate(rsp[opcode], operation));
     else if (opcode  < 0x10) sprintf(outbuf, "%s", decodeOneRegisterWithImmediate(rsp[opcode], operation));
     else if (opcode == 0x10) sprintf(outbuf, "%s", decodeCOP0(operation));

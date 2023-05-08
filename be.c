@@ -6,6 +6,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <signal.h>
+#include <stdint.h>
 
 #include "editor.h"
 #include "term/terminal.h"

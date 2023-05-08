@@ -194,7 +194,7 @@ int getmode(int instruction) {
 	return mode;
 }
 
-void decodeM68K(unsigned long int start, char *outbuf, int *outlen) {
+void decodeM68K(unsigned long int start, char *outbuf, int *outlen, unsigned long int offset0) {
 	unsigned long int end = start + 10;
 	address = start;
 	char operand_s[100];

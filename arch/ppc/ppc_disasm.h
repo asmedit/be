@@ -137,5 +137,5 @@ struct DisasmPara_PPC {
 
 extern ppc_word *PPC_Disassemble(struct DisasmPara_PPC *);
 
-char * decodePPC(unsigned long int start, char *outbuf, int *lendis);
+char * decodePPC(unsigned long int start, char *outbuf, int *lendis, unsigned long int offset0);
 

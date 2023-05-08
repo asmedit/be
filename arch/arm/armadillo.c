@@ -18,7 +18,7 @@
 unsigned int * opcode = NULL;
 struct ad_insn *insn = NULL;
 
-char *decodeARM(unsigned long int start, char *outbuf, int *lendis)
+char *decodeARM(unsigned long int start, char *outbuf, int *lendis, unsigned long int offset0)
 {
      *lendis = 4;
      opcode = start;

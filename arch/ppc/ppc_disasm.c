@@ -2774,7 +2774,7 @@ ppc_word *PPC_Disassemble(struct DisasmPara_PPC *dp)
     char ppc_opcode[640];
     char ppc_operands[2560];
 
-char * decodePPC(unsigned long int start, char *outbuf, int *lendis)
+char * decodePPC(unsigned long int start, char *outbuf, int *lendis, unsigned long int offset0)
 {
      dp.opcode = ppc_opcode;
      dp.operands = ppc_operands;
