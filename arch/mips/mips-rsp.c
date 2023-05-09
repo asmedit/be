@@ -180,13 +180,12 @@ uint32_t le_to_be(uint32_t num) {
     b[0] = b[3]; b[3] = tmp; tmp = b[1]; b[1] = b[2]; b[2] = tmp; return *(uint32_t*)b;
 }
 
-char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned long int offset)
-{
+char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned long int offset) {
     uint32_t operation = le_to_be((uint32_t)*((unsigned long int *)address));
     if (operation == 0x00000000) { sprintf(outbuf, "%s", "nop"); return outbuf; }
     uint8_t reg = (uint8_t)((operation >> 21) & 0x1F);
     uint8_t opcode = (uint8_t)((operation >> 26) & 0x3F);
-    sprintf(outbuf,".dword 0x%08X", operation);
+    sprintf(outbuf,".dword 0x%08X", operation); *lendis = 4;
     if (opcode == 0x00) {
         uint8_t function = (uint8_t)(operation & 0x3F);
         if (function < 0x04 && specials[function]) sprintf(outbuf, "%s", decodeSpecialShift(specials[function], operation));
@@ -208,10 +207,7 @@ char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned 
     else if (opcode  < 0x10 && rsp[opcode]) sprintf(outbuf, "%s", decodeOneRegisterWithImmediate(rsp[opcode], operation));
     else if (opcode == 0x10) sprintf(outbuf, "%s", decodeCOP0(operation));
     else if (opcode == 0x12) sprintf(outbuf, "%s", decodeCOP2(operation));
-    else if ((opcode == 0xAB || opcode == 0x1B || ((opcode > 0x20) && (opcode < 0x2F)) ||
-             (opcode > 0x3D && opcode < 0x3C) || (opcode > 0x3C && opcode < 0x40)) && rsp[opcode])
-              sprintf(outbuf, "%s", decodeLoadStore(rsp[opcode],operation));
-    *lendis = 4;
+    else if ((opcode == 0xAB || opcode == 0x1B || ((opcode > 0x20) && (opcode < 0x2F)) || (opcode > 0x3D && opcode < 0x3C)
+         || (opcode > 0x3C && opcode < 0x40)) && rsp[opcode]) sprintf(outbuf, "%s", decodeLoadStore(rsp[opcode],operation));
     return outbuf;
 }
-
