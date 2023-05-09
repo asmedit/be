@@ -6,7 +6,6 @@
 
 // regs
 
-char * rsp_lost[] = { "b", "s", "l", "d", "q", "r", "p", "u", "h", "f", "w", "t" };
 char * gpr[] =  {  "r0", "at", "v0", "v1", "a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
                    "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "t8", "t9", "k0", "k1", "gp", "sp", "s8", "ra" };
 char * cp0[] =  {  "sp_mem_addr", "sp_dram_addr", "sp_rd_len",    "sp_wr_len", "sp_status",   "sp_dma_full",  "sp_dma_busy",  "sp_semaphore",
@@ -112,25 +111,13 @@ char *decodeCOP2(uint32_t operation) {
     }
 }
 
-char * decodeLoadStore(uint16_t operation, char *LorS)
+char *decodeLoadStore(char *opcode, uint32_t operation)
 {
-    uint8_t ls_subop = (uint8_t)((operation >> 11) & 0x1F);
-    sprintf(str_lost,"%s%sv", LorS, rsp_lost[ls_subop]);
-    uint8_t src = (uint8_t)((operation >> 21) & 0x1F);
-    uint8_t dst = (uint8_t)((operation >> 16) & 0x1F);
-    uint8_t del = (uint8_t)((operation >> 7) & 0xF);
-    uint16_t offset = (uint16_t)((operation & 0x3F) << 2);
-    sprintf(str_lost,"%s%sv $v%i[%d], 0x%4x(%s)", LorS, rsp_lost[ls_subop], dst, del, offset, gpr[src]);
-    return str_lost;
-}
-
-char *decodeNormalLoadStore(char *opcode, uint32_t operation)
-{
-     uint8_t dst = (uint8_t)((operation >> 16) & 0x1F);
-     uint8_t src = (uint8_t)((operation >> 21) & 0x1F);
-     uint16_t imm = (uint16_t)(operation & 0xFFFF);
-     if (imm < 0) sprintf(str_lost,"%s %s, -0x%x(%s)", opcode, gpr[dst], imm, gpr[src]);
-             else sprintf(str_lost,"%s %s, 0x%x(%s)", opcode, gpr[dst], imm, gpr[src]);
+     uint8_t rt = (uint8_t)((operation >> 16) & 0x1F);
+     uint8_t base = (uint8_t)((operation >> 21) & 0x1F);
+     uint16_t offset = (uint16_t)(operation & 0xFFFF);
+     if (offset < 0) sprintf(str_lost,"%s %s, -0x%08X(%s)", opcode, gpr[rt], offset, gpr[base]);
+             else sprintf(str_lost,"%s %s, 0x%08X(%s)", opcode, gpr[rt], offset, gpr[base]);
      return str_lost;
 }
 
@@ -199,33 +186,32 @@ char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned 
     if (operation == 0x00000000) { sprintf(outbuf, "%s", "nop"); return outbuf; }
     uint8_t reg = (uint8_t)((operation >> 21) & 0x1F);
     uint8_t opcode = (uint8_t)((operation >> 26) & 0x3F);
+    sprintf(outbuf,".dword 0x%08X", operation);
     if (opcode == 0x00) {
         uint8_t function = (uint8_t)(operation & 0x3F);
-        if (function < 0x04) sprintf(outbuf, "%s", decodeSpecialShift(specials[function], operation));
-        else if (function < 0x08) sprintf(outbuf, "%s", decodeThreeRegister(specials[function], operation, 1));
-        else if (function == 0x08) sprintf(outbuf, "%s %s", specials[function], gpr[reg]);
+        if (function < 0x04 && specials[function]) sprintf(outbuf, "%s", decodeSpecialShift(specials[function], operation));
+        else if (function < 0x08 && specials[function]) sprintf(outbuf, "%s", decodeThreeRegister(specials[function], operation, 1));
+        else if (function == 0x08 && specials[function]) sprintf(outbuf, "%s %s", specials[function], gpr[reg]);
         else if (function == 0x09) {
              uint8_t return_reg = (uint8_t)((operation >> 11) & 0x1F);
-             if (return_reg == 0xF) sprintf(outbuf, "%s %s", specials[function], gpr[reg]);
+             if (return_reg == 0xF && specials[function]) sprintf(outbuf, "%s %s", specials[function], gpr[reg]);
              else sprintf(outbuf, "%s %s, %s", specials[function], gpr[return_reg], gpr[reg]);
-        } else if (function < 0x20) sprintf(outbuf, "%s %i", specials[function], ((operation >> 6) & 0xFFFFF));
-        else if (function < 0x40) sprintf(outbuf, "%s", decodeThreeRegister(specials[function], operation, 0));
-        else sprintf(outbuf,"Unknown SPECIAL opcode: 0x%x function: 0x%x", opcode, function);
+        } else if (function < 0x20 && specials[function]) sprintf(outbuf, "%s %i", specials[function], ((operation >> 6) & 0xFFFFF));
+        else if (function < 0x40 && specials[function]) sprintf(outbuf, "%s", decodeThreeRegister(specials[function], operation, 0));
     } else if (opcode == 0x01) {
         uint8_t rt = (uint8_t)((operation >> 16) & 0x1F);
-        if (rt < 0x14) sprintf(outbuf, "%s", decodeBranch(regimm[rt], operation, offset));
-        else sprintf(outbuf,"Unknown REGIMM opcode: 0x%x rt: 0x%x", opcode, rt);
-    } else if (opcode  < 0x04) sprintf(outbuf, "%s 0x0%x", rsp[opcode], ((operation & 0x03FFFFFF) << 2));
-    else if (opcode  < 0x06) sprintf(outbuf, "%s", decodeBranchEquals(rsp[opcode], operation, offset));
-    else if (opcode  < 0x08) sprintf(outbuf, "%s", decodeBranch(rsp[opcode], operation, offset));
-    else if (opcode  < 0x0F) sprintf(outbuf, "%s", decodeTwoRegistersWithImmediate(rsp[opcode], operation));
-    else if (opcode  < 0x10) sprintf(outbuf, "%s", decodeOneRegisterWithImmediate(rsp[opcode], operation));
+        if (rt < 0x14 && regimm[rt]) sprintf(outbuf, "%s", decodeBranch(regimm[rt], operation, offset));
+    } else if (opcode  < 0x04 && rsp[opcode]) sprintf(outbuf, "%s 0x0%x", rsp[opcode], ((operation & 0x03FFFFFF) << 2));
+    else if (opcode  < 0x06 && rsp[opcode]) sprintf(outbuf, "%s", decodeBranchEquals(rsp[opcode], operation, offset));
+    else if (opcode  < 0x08 && rsp[opcode]) sprintf(outbuf, "%s", decodeBranch(rsp[opcode], operation, offset));
+    else if (opcode  < 0x0F && rsp[opcode]) sprintf(outbuf, "%s", decodeTwoRegistersWithImmediate(rsp[opcode], operation));
+    else if (opcode  < 0x10 && rsp[opcode]) sprintf(outbuf, "%s", decodeOneRegisterWithImmediate(rsp[opcode], operation));
     else if (opcode == 0x10) sprintf(outbuf, "%s", decodeCOP0(operation));
     else if (opcode == 0x12) sprintf(outbuf, "%s", decodeCOP2(operation));
-    else if (opcode  < 0x2F) sprintf(outbuf, "%s", decodeNormalLoadStore(rsp[opcode],operation));
-    else if (opcode  < 0x38) sprintf(outbuf, "%s", decodeLoadStore(operation, "l"));
-    else if (opcode  < 0x3F) sprintf(outbuf, "%s", decodeLoadStore(operation, "s"));
-    else sprintf(outbuf,"Unknown RSP opcode: 0x%x", opcode);
+    else if ((opcode == 0xAB || opcode == 0x1B || ((opcode > 0x20) && (opcode < 0x2F)) ||
+             (opcode > 0x3D && opcode < 0x3C) || (opcode > 0x3C && opcode < 0x40)) && rsp[opcode])
+              sprintf(outbuf, "%s", decodeLoadStore(rsp[opcode],operation));
     *lendis = 4;
     return outbuf;
 }
+
