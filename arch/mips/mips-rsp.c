@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "../../editor.h"
 
 // regs
 
@@ -89,10 +90,91 @@ char *decodeCOP0(uint32_t operation) {
      uint8_t mt = (uint8_t)((operation >> 21) & 0x1F);
      uint8_t rt = (uint8_t)((operation >> 16) & 0x1F);
      uint8_t rd = (uint8_t)((operation >> 11) & 0x1F);
+     sprintf(str_cop0, ".dword 0x%08X", operation);
      switch (mt) {
          case 0x00: sprintf(str_cop0, "mfc0 %s, %s", gpr[rt], cp0[rd]); break;
          case 0x04: sprintf(str_cop0, "mtc0 %s, %s", gpr[rt], cp0[rd]); break;
-         default:   sprintf(str_cop0, "Unknown COP0 opcode: 0x%x", mt); break;
+         default: break;
+     }
+     return str_cop0;
+}
+
+char *decodeCOP1(uint32_t operation) {
+     uint8_t fmt  = (uint8_t)((operation >> 21) & 0x1F);
+     uint8_t function =     (uint8_t)(operation & 0x3F);
+     uint8_t rt   = (uint8_t)((operation >> 16) & 0x1F);
+     uint8_t fs   = (uint8_t)((operation >> 11) & 0x1F);
+     uint8_t fd   = (uint8_t)((operation >> 06) & 0x1F);
+     uint8_t ndtt = rt & 3;
+     uint8_t cc   = rt >> 2;
+     uint16_t offset = (uint16_t)((operation & 0xFFFF));
+     char *suffix[4] = { "s","d", "w", "l", 0 };
+     switch (fmt) {
+         case 0x00: sprintf(str_cop0,  "mfc1 %s, f%i", gpr[rt], fs); break;
+         case 0x01: sprintf(str_cop0, "dmfc1 %s, f%i", gpr[rt], fs); break;
+         case 0x02: sprintf(str_cop0,  "cfc1 %s, f%i", gpr[rt], fs); break;
+         case 0x04: sprintf(str_cop0,  "mtc1 %s, f%i", gpr[rt], fs); break;
+         case 0x05: sprintf(str_cop0, "dmtc1 %s, f%i", gpr[rt], fs); break;
+         case 0x06: sprintf(str_cop0,  "ctc1 %i, f%i", gpr[rt], fs); break;
+         case 0x08: // BC
+                    switch (ndtt) {
+                        case 0: sprintf(str_cop0,  "bc1f %s, %s", cc, offset); break;
+                        case 1: sprintf(str_cop0,  "bc1t %s, %s", cc, offset); break;
+                        case 2: sprintf(str_cop0, "bc1fl %s, %s", cc, offset); break;
+                        case 3: sprintf(str_cop0, "bc1tl %s, %s", cc, offset); break;
+                        default: break;
+                    }
+                    break;
+
+         case 0x10: case 0x11: // D
+         case 0x12: case 0x13: case 0x14: // W
+         case 0x15: case 0x16: case 0x17: // L
+                    switch (function) { // S, D, W
+                        case 0x00: sprintf(str_cop0,    "add.%s f%i, f%i, f%i", suffix[fmt&3], fd, fs, rt); break;
+                        case 0x01: sprintf(str_cop0,    "sub.%s f%i, f%i, f%i", suffix[fmt&3], fd, fs, rt); break;
+                        case 0x02: sprintf(str_cop0,    "mul.%s f%i, f%i, f%i", suffix[fmt&3], fd, fs, rt); break;
+                        case 0x03: sprintf(str_cop0,    "div.%s f%i, f%i, f%i", suffix[fmt&3], fd, fs, rt); break;
+                        case 0x04: sprintf(str_cop0,   "sqrt.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x05: sprintf(str_cop0,    "abs.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x06: sprintf(str_cop0,    "mov.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x07: sprintf(str_cop0,    "neg.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x08: sprintf(str_cop0,"round.l.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x09: sprintf(str_cop0,"trunc.l.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x0A: sprintf(str_cop0, "ceil.l.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x0B: sprintf(str_cop0,"floor.l.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x0C: sprintf(str_cop0,"round.w.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x0D: sprintf(str_cop0,"trunc.w.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x0E: sprintf(str_cop0, "ceil.w.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x0F: sprintf(str_cop0,"floor.w.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x11: sprintf(str_cop0,   "movt.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x12: sprintf(str_cop0,   "movz.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x13: sprintf(str_cop0,   "movn.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x15: sprintf(str_cop0,  "recip.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x16: sprintf(str_cop0,  "rsqrt.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x20: sprintf(str_cop0,  "cvt.s.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x21: sprintf(str_cop0,  "cvt.d.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x24: sprintf(str_cop0,  "cvt.w.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x25: sprintf(str_cop0,  "cvt.l.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x30: sprintf(str_cop0,    "c.f.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x31: sprintf(str_cop0,   "c.un.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x32: sprintf(str_cop0,   "c.eq.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x33: sprintf(str_cop0,  "c.ueq.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x34: sprintf(str_cop0,  "c.olt.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x35: sprintf(str_cop0,  "c.ult.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x36: sprintf(str_cop0,  "c.ole.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x37: sprintf(str_cop0,  "c.ule.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x38: sprintf(str_cop0,   "c.sf.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x39: sprintf(str_cop0, "c.ngle.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x3A: sprintf(str_cop0,  "c.seq.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x3B: sprintf(str_cop0,   "c.ng.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x3C: sprintf(str_cop0,   "c.lt.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x3D: sprintf(str_cop0,  "c.nge.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x3E: sprintf(str_cop0,   "c.le.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        case 0x3F: sprintf(str_cop0,  "c.ngt.%s f%i, f%i", suffix[fmt&3], fd, fs); break;
+                        default: break;
+                    }
+                    break;
+           default: break;
      }
 
      return str_cop0;
@@ -106,7 +188,8 @@ char *decodeCOP2(uint32_t operation) {
         case 0x04: return decodeMoveToFromCoprocessor("mtc2", operation);
         case 0x02: return decodeMoveControlToFromCoprocessor("cfc2", operation);
         case 0x06: return decodeMoveControlToFromCoprocessor("ctc2", operation);
-        default:   sprintf(str_cop2, "Unknown COP2 opcode: 0x%x", subop);
+        default:   sprintf(str_cop0, "1.dword 0x%08X", operation); 
+        sprintf(str_cop2, ".wrord 0x%08X", operation);
                    return str_cop2;
     }
 }
@@ -181,11 +264,11 @@ uint32_t le_to_be(uint32_t num) {
 }
 
 char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned long int offset) {
-    uint32_t operation = le_to_be((uint32_t)*((unsigned long int *)address));
+    uint32_t operation = le_to_be((uint32_t)*((unsigned long int *)address)); *lendis = 4;
     if (operation == 0x00000000) { sprintf(outbuf, "%s", "nop"); return outbuf; }
     uint8_t reg = (uint8_t)((operation >> 21) & 0x1F);
     uint8_t opcode = (uint8_t)((operation >> 26) & 0x3F);
-    sprintf(outbuf,".dword 0x%08X", operation); *lendis = 4;
+    sprintf(outbuf,".dword 0x%08X", operation);
     if (opcode == 0x00) {
         uint8_t function = (uint8_t)(operation & 0x3F);
         if (function < 0x04 && specials[function]) sprintf(outbuf, "%s", decodeSpecialShift(specials[function], operation));
@@ -206,6 +289,7 @@ char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned 
     else if (opcode  < 0x0F && rsp[opcode]) sprintf(outbuf, "%s", decodeTwoRegistersWithImmediate(rsp[opcode], operation));
     else if (opcode  < 0x10 && rsp[opcode]) sprintf(outbuf, "%s", decodeOneRegisterWithImmediate(rsp[opcode], operation));
     else if (opcode == 0x10) sprintf(outbuf, "%s", decodeCOP0(operation));
+    else if (opcode == 0x11) sprintf(outbuf, "%s", decodeCOP1(operation));
     else if (opcode == 0x12) sprintf(outbuf, "%s", decodeCOP2(operation));
     else if ((opcode == 0xAB || opcode == 0x1B || ((opcode > 0x20) && (opcode < 0x2F)) || (opcode > 0x3D && opcode < 0x3C)
          || (opcode > 0x3C && opcode < 0x40)) && rsp[opcode]) sprintf(outbuf, "%s", decodeLoadStore(rsp[opcode],operation));
