@@ -18,8 +18,8 @@ Architectures
 * EM64T: SSE5, KNI, AVX-512, AES, AMX, TSX, MPX, FMA, VNNI, GFNI, SGX, CET, PKU
 * AArch64: v8.5, NEON, SVE, SME
 * RISC-V: RV32, RV64, RV128
-* PowerPC: POWER, Cell/BE (Sony PlayStation 3)
-* MIPS: R4300 (Nintendo 64)
+* PowerPC: POWER, Cell/BE (Sony PS3)
+* MIPS: MIPS32, MIPS64 (Nintendo 64, Sony PS2)
 * SuperH: SH-4 (Sega Dreamcast)
 * M68K: M68000 (Motorola CD-920)
 * PDP-11: EIS, FIS, CIS (DEC PDP-11/70)
