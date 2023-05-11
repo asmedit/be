@@ -44,7 +44,7 @@ char * rsp_vec[] = {
    "vcrp", "vrcpl", "vrcph", "vmov", "vrsq", "vrsql", "vrsqh", "vnop" };
 
 char str_opcode[256], str_bo[256], str_beqo[256], str_lost[256], str_vec_elem[256], str_vec[256], str_vecop[256], str_cop0[256];
-char str_cop2[256], str_mc[256], str_reg[256], unknown[256];
+char str_cop2[256], str_cop[256], str_mc[256], str_reg[256], unknown[256];
 
 char *decodeVectorElement(uint8_t v, uint8_t e)
 {
@@ -69,7 +69,10 @@ char *decodeVector(uint32_t operation)
 {
     uint8_t opcode = (uint8_t)(operation & 0x3F);
     if (opcode == 0x37) { sprintf(str_vecop, "%s", "nop"); return str_vecop; }
-    else if (opcode < 0x37) { sprintf(str_vecop, "%s", decodeVectorElementScalar(opcode, operation)); return str_vecop; }
+    else if (opcode < 0x37) {
+        sprintf(str_vecop, "%s", decodeVectorElementScalar(opcode, operation));
+        return str_vecop;
+    }
 
     uint8_t e  = (uint8_t)((operation >> 21) & 0xF);
     uint8_t vt = (uint8_t)((operation >> 16) & 0x1F);
@@ -104,7 +107,7 @@ char *decodeCOP0(uint32_t operation) {
      uint8_t rd = (uint8_t)((operation >> 11) & 0x1F);
      uint8_t sel = (uint8_t)(operation & 0x3);
      uint8_t sc = (uint8_t)((operation >> 5) & 1);
-     sprintf(str_cop0, ".dword 0x%08X", operation);
+     sprintf(str_cop0, ".word 0x%08X", operation);
      if ((operation >> 25) & 1) switch (operation & 0x3F) {
          case 0x01: sprintf(str_cop0, "tlbr"); break;
          case 0x02: sprintf(str_cop0, "tlbwi"); break;
@@ -129,6 +132,11 @@ char *decodeCOP0(uint32_t operation) {
          default: break;
      }
      return str_cop0;
+}
+
+char *decodeCOP1X(uint32_t operation) {
+     sprintf(str_cop, ".word 0x%08X", operation);
+     return str_cop;
 }
 
 char *decodeCOP1(uint32_t operation) {
@@ -220,8 +228,8 @@ char *decodeCOP2(uint32_t operation) {
         case 0x04: return decodeMoveToFromCoprocessor("mtc2", operation);
         case 0x02: return decodeMoveControlToFromCoprocessor("cfc2", operation);
         case 0x06: return decodeMoveControlToFromCoprocessor("ctc2", operation);
-        default:   sprintf(str_cop0, "1.dword 0x%08X", operation); 
-        sprintf(str_cop2, ".wrord 0x%08X", operation);
+        default:   sprintf(str_cop0, ".word 0x%08X", operation); 
+        sprintf(str_cop2, ".word 0x%08X", operation);
                    return str_cop2;
     }
 }
@@ -301,7 +309,7 @@ char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned 
     if (operation == 0x00000000) { sprintf(outbuf, "%s", "nop"); return outbuf; }
     uint8_t reg = (uint8_t)((operation >> 21) & 0x1F);
     uint8_t opcode = (uint8_t)((operation >> 26) & 0x3F);
-    sprintf(outbuf,".dword 0x%08X", operation);
+    sprintf(outbuf,".word 0x%08X", operation);
     if (opcode == 0x00) { // SPECIAL
         uint8_t function = (uint8_t)(operation & 0x3F);
         if (function < 0x04 && specials[function]) sprintf(outbuf, "%s", decodeSpecialShift(specials[function], operation));
@@ -324,7 +332,7 @@ char * decodeMIPS(unsigned long int address, char *outbuf, int*lendis, unsigned 
     else if (opcode == 0x10) sprintf(outbuf, "%s", decodeCOP0(operation));
     else if (opcode == 0x11) sprintf(outbuf, "%s", decodeCOP1(operation));
     else if (opcode == 0x12) sprintf(outbuf, "%s", decodeCOP2(operation));
-    else if (opcode == 0x12) sprintf(outbuf, "%s", decodeCOP2(operation));
+    else if (opcode == 0x13) sprintf(outbuf, "%s", decodeCOP1X(operation));
     else if (opcode == 0x1D) { sprintf(outbuf, "jalx 0x%08X", operation & 0x1FFFFFF); }
     else if (opcode == 0x1C) { // SPECIAL2
     }
