@@ -60,7 +60,7 @@ struct ad_insn {
     int cc;
 };
 
-static const int AD_NONE = -1;
+#define AD_NONE ((int)-1)
 
 enum {
     AD_OP_REG = 0, AD_OP_IMM, AD_OP_SHIFT, AD_OP_MEM
