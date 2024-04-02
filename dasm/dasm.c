@@ -122,7 +122,7 @@ void disassemble_screen(struct editor* e, struct charbuf* b)
     q = &e->contents[offset];
     for (int i = 0; i < e->screen_rows - 2; i++) if (offset < e->content_length)
     {
-        decode(q, outbuf, &lendis, offset);
+        decode((unsigned long)q, outbuf, &lendis, offset);
         setup_instruction(i, e, b, offset, (uint8_t *) q, lendis, outbuf);
         q += lendis;
         offset += lendis;

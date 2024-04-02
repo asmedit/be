@@ -21,8 +21,8 @@ struct ad_insn *insn = NULL;
 char *decodeARM(unsigned long int start, char *outbuf, int *lendis, unsigned long int offset0)
 {
      *lendis = 4;
-     opcode = start;
-     ArmadilloDisassemble(*opcode, opcode, &insn);
+     opcode = (unsigned int *)start;
+     ArmadilloDisassemble(*opcode, (unsigned long)opcode, &insn);
      memcpy(outbuf,insn->decoded,strlen(insn->decoded)+1);
      ArmadilloDone(&insn);
      return outbuf;
