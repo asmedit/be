@@ -13,7 +13,10 @@ objects := be.o editor.o \
 	arch/ppc/ppc_disasm.o \
 	arch/m68k/dis68k.o \
 	arch/sh4/sh4.o \
-	arch/nv/nv.o \
+	arch/nv/core-as.o arch/nv/ctx.o arch/nv/falcon.o arch/nv/gk110.o arch/nv/macro.o arch/nv/vp1.o arch/nv/hash.o \
+	arch/nv/envyas.o arch/nv/g80.o arch/nv/gm107.o arch/nv/nv.o arch/nv/vuc.o arch/nv/xtensa.o arch/nv/astr.o arch/nv/colors.o \
+	arch/nv/core-dis.o arch/nv/core.o arch/nv/envydis.o arch/nv/gf100.o arch/nv/hwsq.o arch/nv/vcomp.o arch/nv/mask.o \
+	arch/nv/varinfo.o arch/nv/vardata.o arch/nv/symtab.o arch/nv/easm.o arch/nv/aprintf.o arch/nv/easm_xfrm.o arch/nv/easm_print.o \
 	arch/mips/mips-rsp.o \
 	arch/pdp11/pdp11.o
 .PHONY: all

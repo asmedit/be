@@ -19,11 +19,11 @@ char *decodeNV(unsigned long int address, char *outbuf, int *lendis, unsigned lo
 {
     struct editor *e = editor();
     unsigned long int start = address, i;
-    unsigned long int finish = address + 2;
+    unsigned long int finish = address + 8;
     uint64_t operation = NVword(start);
     for (i = 0; i < 1000; i++) nvout[i] = 0;
 
-    if (operation == 0) { sprintf(nvout, "%s ", ""); }
+    sprintf(nvout, "%s ", "nop");
 
     memcpy(outbuf,nvout,strlen(nvout));
     outbuf[strlen(nvout)] = '\0';
